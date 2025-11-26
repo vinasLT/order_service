@@ -1,0 +1,56 @@
+from contextlib import asynccontextmanager
+from typing import Optional, Callable
+
+import redis
+from fastapi import FastAPI
+from fastapi_pagination import add_pagination
+from fastapi_problem.handler import new_exception_handler, add_exception_handler
+
+from app.routers import api_router
+from app.config import settings
+from app.core.logger import logger
+from app.core.utils import init_fastapi_cache
+
+
+def setup_middleware_and_handlers(app: FastAPI):
+    eh = new_exception_handler()
+    add_exception_handler(app, eh)
+
+def setup_routers(app: FastAPI):
+    app.include_router(api_router)
+    @app.get("/health", tags=["Health"])
+    async def health_check():
+        return {"status": "ok"}
+
+def create_app(
+        custom_redis_client: Optional[redis.Redis] = None,
+        lifespan_override: Optional[Callable] = None
+) -> FastAPI:
+    @asynccontextmanager
+    async def default_lifespan(_: FastAPI):
+        init_fastapi_cache(custom_redis_client)
+        logger.info(f"{settings.APP_NAME} started!")
+        yield
+
+
+    docs_url = "/docs" if settings.enable_docs else None
+    redoc_url = "/redoc" if settings.enable_docs else None
+    openapi_url = "/openapi.json" if settings.enable_docs else None
+
+    app = FastAPI(
+        title="Order service",
+        description="Create and manage orders",
+        version="0.0.1",
+        root_path=settings.ROOT_PATH,
+        docs_url=docs_url,
+        redoc_url=redoc_url,
+        openapi_url=openapi_url,
+        lifespan=lifespan_override or default_lifespan
+    )
+
+    add_pagination(app)
+
+    setup_middleware_and_handlers(app)
+    setup_routers(app)
+
+    return app
