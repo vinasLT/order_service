@@ -1,5 +1,4 @@
 import asyncio
-import uuid
 from datetime import datetime, timezone
 
 from app.core.utils import get_cheapest_terminal_prices
@@ -28,9 +27,9 @@ class GenerateFromLot:
         if not response.lot:
             raise ValueError("Lot not found")
         return response.lot[0]
-
+    @staticmethod
     async def _get_calculator_data(
-        self, lot: Lot, vehicle_value: int
+        lot: Lot, vehicle_value: int
     ) -> calculator_pb2.GetCalculatorWithDataResponse:
         async with CalculatorRpcClient() as client:
             calculator = await client.get_calculator_with_data(
@@ -65,15 +64,9 @@ class GenerateFromLot:
         location_id = detailed_data.location_id or getattr(lot, "location_id", 0)
         terminal_id = terminal.terminal_id
         fee_type_id = detailed_data.fee_type_id or 0
-        vehicle_name = (
-            " ".join(filter(None, [getattr(lot, "make", ""), getattr(lot, "model", ""), getattr(lot, "series", "")])).strip()
-            or getattr(lot, "title", None)
-            or getattr(lot, "model", None)
-            or "Unknown"
-        )
-        keys = str(lot.keys).lower() in {"yes", "y", "true", "1", "key", "with keys"}
+        keys = str(lot.keys).lower() == "yes"
         damage = bool(lot.damage_pr or lot.damage_sec)
-        default_calculator = getattr(calculator.data, "calculator", None)
+        default_calculator = calculator.data.calculator
         if not default_calculator:
             raise ValueError("Calculator response missing calculator data")
 
@@ -104,9 +97,9 @@ class GenerateFromLot:
                     order_date=datetime.now(timezone.utc),
                     lot_id=lot.lot_id,
                     vehicle_value=vehicle_value,
-                    vehicle_type=lot.vehicle_type.upper() if lot.vehicle_type else "CAR",
+                    vehicle_type="MOTO" if lot.vehicle_type == 'Motorcycle' else "CAR",
                     vin=lot.vin,
-                    vehicle_name=vehicle_name,
+                    vehicle_name=lot.title,
                     keys=keys,
                     damage=damage,
                     color=lot.color or "Unknown",
@@ -128,44 +121,65 @@ class GenerateFromLot:
                 flush=True,
             )
 
-            items = [
-                InvoiceItemCreate(
-                    name=f"{vehicle_name} ({lot.vin})",
-                    amount=vehicle_value,
-                    order_id=order.id,
-                ),
-                InvoiceItemCreate(
-                    name="Broker Fee",
-                    amount=default_calculator.broker_fee,
-                    order_id=order.id,
-                ),
-            ]
-            items.extend(
-                InvoiceItemCreate(name=fee.name, amount=fee.price, order_id=order.id)
-                for fee in default_calculator.additional.fees
-                if fee.price
+            items = self.build_invoice_items_from_order_data(
+                order=order,
+                default_calculator=default_calculator,
+                cheapest_terminal=cheapest_terminal,
+                transportation_city=transportation_city,
+                ocean_city=ocean_city,
             )
-
-            if cheapest_terminal:
-                items.append(
-                    InvoiceItemCreate(
-                        name=f"Transportation ({terminal_name_for_order})",
-                        amount=transportation_city.price if transportation_city else 0,
-                        order_id=order.id,
-                    )
-                )
-                items.append(
-                    InvoiceItemCreate(
-                        name=f"Ocean Shipping ({terminal_name_for_order})",
-                        amount=ocean_city.price if ocean_city else 0,
-                        order_id=order.id,
-                    )
-                )
 
             await order_service.create_invoice_items_batch(order.id, items)
             await db.commit()
 
             return order
+
+    @classmethod
+    def build_invoice_items_from_order_data(
+        cls,
+        *,
+        order,
+        default_calculator: calculator_pb2.DefaultCalculator,
+        cheapest_terminal,
+        transportation_city,
+        ocean_city,
+    ) -> list[InvoiceItemCreate]:
+        items = [
+            InvoiceItemCreate(
+                name=f"{order.vehicle_name.upper()} ({order.vin})",
+                amount=order.vehicle_value,
+                order_id=order.id,
+            ),
+            InvoiceItemCreate(
+                name="Broker Fee",
+                amount=default_calculator.broker_fee,
+                order_id=order.id,
+            ),
+        ]
+
+        items.extend(
+            InvoiceItemCreate(name=fee.name, amount=fee.price, order_id=order.id)
+            for fee in default_calculator.additional.fees
+            if fee.price
+        )
+
+        if cheapest_terminal:
+            items.append(
+                InvoiceItemCreate(
+                    name=f"Transportation ({order.terminal_name})",
+                    amount=transportation_city.price if transportation_city else 0,
+                    order_id=order.id,
+                )
+            )
+            items.append(
+                InvoiceItemCreate(
+                    name=f"Ocean Shipping ({order.terminal_name})",
+                    amount=ocean_city.price if ocean_city else 0,
+                    order_id=order.id,
+                )
+            )
+
+        return items
 
 
 if __name__ == "__main__":
@@ -173,7 +187,7 @@ if __name__ == "__main__":
     auction = AuctionEnum.COPART
     user_uuid = 'acd4532b-014a-434f-b946-154a95e763b5'
     bid_amount = 1000
-    generator = GenerateFromLot(lot_id=lot_id, auction=auction, user_uuid=user_uuid)
+    generator = GenerateFromLot(lot_id=lot_id, auction=auction, user_uuid=user_uuid, bid_amount=100)
 
     async def main():
         await generator.generate()
