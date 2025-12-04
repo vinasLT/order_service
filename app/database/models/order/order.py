@@ -11,7 +11,7 @@ from ..mixins import IdMixin, TimestampMixin
 
 
 if TYPE_CHECKING:
-    from app.database.models import InvoiceItems, OrderStatusHistory
+    from app.database.models import OrderStatusHistory, InvoiceItems
 
 
 class Order(IdMixin, TimestampMixin, Base):
@@ -26,7 +26,9 @@ class Order(IdMixin, TimestampMixin, Base):
     )
     lot_id: Mapped[int] = mapped_column(nullable=False, unique=True)
     vehicle_value: Mapped[int] = mapped_column(nullable=False)
-
+    invoice_type: Mapped[InvoiceTypeEnum] = mapped_column(
+        Enum(InvoiceTypeEnum), nullable=False, default=InvoiceTypeEnum.DEFAULT
+    )
     vehicle_type: Mapped[str] = mapped_column(nullable=False, default="CAR")
     vin: Mapped[str] = mapped_column(unique=True, nullable=False)
     vehicle_name: Mapped[str] = mapped_column(nullable=False)
@@ -34,10 +36,12 @@ class Order(IdMixin, TimestampMixin, Base):
     damage: Mapped[bool] = mapped_column(nullable=False, default=False)
     color: Mapped[str] = mapped_column(nullable=False, default="Unknown")
 
+    tracking_link: Mapped[str] = mapped_column(nullable=True, default=None)
+
     auto_generated: Mapped[bool] = mapped_column(nullable=False, default=False)
     fee_type: Mapped[str] = mapped_column(nullable=False)
     delivery_status: Mapped[OrderStatusEnum] = mapped_column(
-        Enum(OrderStatusEnum), nullable=False, default=OrderStatusEnum.PENDING_PAYMENT
+        Enum(OrderStatusEnum), nullable=False, default=OrderStatusEnum.WON
     )
 
     # --- external calculator fields ---
@@ -47,6 +51,10 @@ class Order(IdMixin, TimestampMixin, Base):
     location_city: Mapped[str] = mapped_column(nullable=True)
     location_state: Mapped[str] = mapped_column(nullable=True)
     location_postal_code: Mapped[str] = mapped_column(nullable=True)
+
+    # -- destination
+    destination_id: Mapped[int] = mapped_column(nullable=True, default=None)
+    destination_name: Mapped[str] = mapped_column(nullable=True, default=None)
 
     # -- terminal
     terminal_id: Mapped[int] = mapped_column(nullable=False)

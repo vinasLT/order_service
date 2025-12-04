@@ -2,14 +2,14 @@ from enum import Enum
 
 
 class OrderStatusEnum(str, Enum):
-    PENDING_PAYMENT = "pending_payment"
-    PAID = "paid"
-    UNPAID = "unpaid"
-    PICKED_UP = "picked_up"
-    DELIVERED_TERMINAL = "delivered_terminal"
-    NO_TITLE = "no_title"
-    LOADED_INTO_CONTAINER = "loaded_into_container"
+    WON = 'won'
+    PORT_CHOSEN = 'port_chosen'
+    INVOICE_ADDED = 'invoice_added'
+    TRACKING_ADDED = 'tracking_added'
+    VEHICLE_IN_CUSTOM_AGENCY = 'vehicle_in_custom_agency'
+    CUSTOM_INVOICE_ADDED = 'custom_invoice_added'
+    DELIVERED = 'delivered'
 
 
 class InvoiceTypeEnum(str, Enum):
-
+    DEFAULT = "default"

@@ -14,7 +14,7 @@ class OrderBase(BaseModel):
     lot_id: int = Field(..., description="Lot identifier")
     vehicle_value: int = Field(..., ge=0, description="Vehicle price")
     invoice_type: InvoiceTypeEnum = Field(
-        default=InvoiceTypeEnum.NAVI_GRUPE_INVOICE,
+        default=InvoiceTypeEnum.DEFAULT,
         description="Invoice type",
     )
     vehicle_type: str = Field(default="CAR", description="Vehicle type")
@@ -28,10 +28,11 @@ class OrderBase(BaseModel):
 
     location_id: int = Field(..., description="Location ID")
 
+    destination_id: int | None = Field(None, description="Destination ID")
+
     terminal_id: int = Field(..., description="Terminal ID")
     fee_type_id: int = Field(..., description="Fee type ID")
-
-    user_uuid: str = Field(..., description="UUID of the user who created the order")
+    user_uuid: str = Field(..., description="UUID of the user who own the order")
 
 
 class OrderCreate(OrderBase):
@@ -39,6 +40,7 @@ class OrderCreate(OrderBase):
     location_city: str | None
     location_state: str | None
     location_postal_code: str | None
+    destination_name: str | None
     terminal_name: str
     fee_type_name: str
 
@@ -59,17 +61,21 @@ class OrderUpdate(BaseModel):
     fee_type: str | None = None
     delivery_status: OrderStatusEnum | None = None
 
+    tracking_link: str | None = None
+
     location_id: int | None = None
     location_name: str | None = None
     location_city: str | None = None
     location_state: str | None = None
     location_postal_code: str | None = None
 
+    destination_id: int | None = None
+    destination_name: str | None = None
+
     terminal_id: int | None = None
     terminal_name: str | None = None
     fee_type_id: int | None = None
     fee_type_name: str | None = None
-
     user_uuid: str | None = None
 
 
@@ -82,7 +88,9 @@ class OrderRead(OrderBase):
     location_city: str | None
     location_state: str | None
     location_postal_code: str | None
+    destination_name: str
     terminal_name: str
     fee_type_name: str
+    tracking_link: str | None = None
 
     model_config = ConfigDict(from_attributes=True)

@@ -122,14 +122,48 @@ class GetCalculatorWithoutDataRequest(_message.Message):
     def __init__(self, price: _Optional[int] = ..., auction: _Optional[str] = ..., lot_id: _Optional[str] = ...) -> None: ...
 
 class GetCalculatorWithDataResponse(_message.Message):
-    __slots__ = ("data", "message", "success")
+    __slots__ = ("data", "detailed_data", "message", "success")
     DATA_FIELD_NUMBER: _ClassVar[int]
+    DETAILED_DATA_FIELD_NUMBER: _ClassVar[int]
     MESSAGE_FIELD_NUMBER: _ClassVar[int]
     SUCCESS_FIELD_NUMBER: _ClassVar[int]
     data: CalculatorOut
+    detailed_data: DetailedCalculatorData
     message: str
     success: bool
-    def __init__(self, data: _Optional[_Union[CalculatorOut, _Mapping]] = ..., message: _Optional[str] = ..., success: bool = ...) -> None: ...
+    def __init__(self, data: _Optional[_Union[CalculatorOut, _Mapping]] = ..., detailed_data: _Optional[_Union[DetailedCalculatorData, _Mapping]] = ..., message: _Optional[str] = ..., success: bool = ...) -> None: ...
+
+class Terminal(_message.Message):
+    __slots__ = ("terminal_id", "terminal_name")
+    TERMINAL_ID_FIELD_NUMBER: _ClassVar[int]
+    TERMINAL_NAME_FIELD_NUMBER: _ClassVar[int]
+    terminal_id: int
+    terminal_name: str
+    def __init__(self, terminal_id: _Optional[int] = ..., terminal_name: _Optional[str] = ...) -> None: ...
+
+class Destination(_message.Message):
+    __slots__ = ("destination_id", "destination_name")
+    DESTINATION_ID_FIELD_NUMBER: _ClassVar[int]
+    DESTINATION_NAME_FIELD_NUMBER: _ClassVar[int]
+    destination_id: int
+    destination_name: str
+    def __init__(self, destination_id: _Optional[int] = ..., destination_name: _Optional[str] = ...) -> None: ...
+
+class DetailedCalculatorData(_message.Message):
+    __slots__ = ("location_id", "location_data", "terminals", "fee_type_id", "fee_type_data", "available_destinations")
+    LOCATION_ID_FIELD_NUMBER: _ClassVar[int]
+    LOCATION_DATA_FIELD_NUMBER: _ClassVar[int]
+    TERMINALS_FIELD_NUMBER: _ClassVar[int]
+    FEE_TYPE_ID_FIELD_NUMBER: _ClassVar[int]
+    FEE_TYPE_DATA_FIELD_NUMBER: _ClassVar[int]
+    AVAILABLE_DESTINATIONS_FIELD_NUMBER: _ClassVar[int]
+    location_id: int
+    location_data: Location
+    terminals: _containers.RepeatedCompositeFieldContainer[Terminal]
+    fee_type_id: int
+    fee_type_data: FeeType
+    available_destinations: _containers.RepeatedCompositeFieldContainer[Destination]
+    def __init__(self, location_id: _Optional[int] = ..., location_data: _Optional[_Union[Location, _Mapping]] = ..., terminals: _Optional[_Iterable[_Union[Terminal, _Mapping]]] = ..., fee_type_id: _Optional[int] = ..., fee_type_data: _Optional[_Union[FeeType, _Mapping]] = ..., available_destinations: _Optional[_Iterable[_Union[Destination, _Mapping]]] = ...) -> None: ...
 
 class GetCalculatorWithIdsResponse(_message.Message):
     __slots__ = ("calculator", "location", "terminal_name", "destination_name", "fee_type")
@@ -168,14 +202,16 @@ class FeeType(_message.Message):
     def __init__(self, auction: _Optional[str] = ..., fee_type: _Optional[str] = ...) -> None: ...
 
 class GetCalculatorWithoutDataResponse(_message.Message):
-    __slots__ = ("data", "message", "success")
+    __slots__ = ("data", "detailed_data", "message", "success")
     DATA_FIELD_NUMBER: _ClassVar[int]
+    DETAILED_DATA_FIELD_NUMBER: _ClassVar[int]
     MESSAGE_FIELD_NUMBER: _ClassVar[int]
     SUCCESS_FIELD_NUMBER: _ClassVar[int]
     data: CalculatorOut
+    detailed_data: DetailedCalculatorData
     message: str
     success: bool
-    def __init__(self, data: _Optional[_Union[CalculatorOut, _Mapping]] = ..., message: _Optional[str] = ..., success: bool = ...) -> None: ...
+    def __init__(self, data: _Optional[_Union[CalculatorOut, _Mapping]] = ..., detailed_data: _Optional[_Union[DetailedCalculatorData, _Mapping]] = ..., message: _Optional[str] = ..., success: bool = ...) -> None: ...
 
 class CalculatorBatchItem(_message.Message):
     __slots__ = ("calculator", "lot_id")

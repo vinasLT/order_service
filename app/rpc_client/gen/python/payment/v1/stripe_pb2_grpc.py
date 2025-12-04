@@ -75,3 +75,118 @@ class StripeService(object):
             timeout,
             metadata,
             _registered_method=True)
+
+
+class PaymentServiceStub(object):
+    """Missing associated documentation comment in .proto file."""
+
+    def __init__(self, channel):
+        """Constructor.
+
+        Args:
+            channel: A grpc.Channel.
+        """
+        self.CreateNewTransaction = channel.unary_unary(
+                '/payment.v1.PaymentService/CreateNewTransaction',
+                request_serializer=payment_dot_v1_dot_stripe__pb2.CreateNewTransactionRequest.SerializeToString,
+                response_deserializer=payment_dot_v1_dot_stripe__pb2.CreateNewTransactionResponse.FromString,
+                _registered_method=True)
+        self.GetUserAccount = channel.unary_unary(
+                '/payment.v1.PaymentService/GetUserAccount',
+                request_serializer=payment_dot_v1_dot_stripe__pb2.GetUserAccountRequest.SerializeToString,
+                response_deserializer=payment_dot_v1_dot_stripe__pb2.GetUserAccountResponse.FromString,
+                _registered_method=True)
+
+
+class PaymentServiceServicer(object):
+    """Missing associated documentation comment in .proto file."""
+
+    def CreateNewTransaction(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetUserAccount(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+
+def add_PaymentServiceServicer_to_server(servicer, server):
+    rpc_method_handlers = {
+            'CreateNewTransaction': grpc.unary_unary_rpc_method_handler(
+                    servicer.CreateNewTransaction,
+                    request_deserializer=payment_dot_v1_dot_stripe__pb2.CreateNewTransactionRequest.FromString,
+                    response_serializer=payment_dot_v1_dot_stripe__pb2.CreateNewTransactionResponse.SerializeToString,
+            ),
+            'GetUserAccount': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetUserAccount,
+                    request_deserializer=payment_dot_v1_dot_stripe__pb2.GetUserAccountRequest.FromString,
+                    response_serializer=payment_dot_v1_dot_stripe__pb2.GetUserAccountResponse.SerializeToString,
+            ),
+    }
+    generic_handler = grpc.method_handlers_generic_handler(
+            'payment.v1.PaymentService', rpc_method_handlers)
+    server.add_generic_rpc_handlers((generic_handler,))
+    server.add_registered_method_handlers('payment.v1.PaymentService', rpc_method_handlers)
+
+
+ # This class is part of an EXPERIMENTAL API.
+class PaymentService(object):
+    """Missing associated documentation comment in .proto file."""
+
+    @staticmethod
+    def CreateNewTransaction(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/payment.v1.PaymentService/CreateNewTransaction',
+            payment_dot_v1_dot_stripe__pb2.CreateNewTransactionRequest.SerializeToString,
+            payment_dot_v1_dot_stripe__pb2.CreateNewTransactionResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetUserAccount(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/payment.v1.PaymentService/GetUserAccount',
+            payment_dot_v1_dot_stripe__pb2.GetUserAccountRequest.SerializeToString,
+            payment_dot_v1_dot_stripe__pb2.GetUserAccountResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)

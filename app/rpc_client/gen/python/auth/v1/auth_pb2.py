@@ -24,7 +24,7 @@ _sym_db = _symbol_database.Default()
 
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x12\x61uth/v1/auth.proto\x12\x07\x61uth.v1\"-\n\x0eGetUserRequest\x12\x1b\n\tuser_uuid\x18\x01 \x01(\tR\x08userUuid\"\xd5\x02\n\x0fGetUserResponse\x12\x1d\n\nfirst_name\x18\x01 \x01(\tR\tfirstName\x12\x1b\n\tlast_name\x18\x02 \x01(\tR\x08lastName\x12\x1a\n\x08language\x18\x03 \x01(\tR\x08language\x12\x14\n\x05\x65mail\x18\x04 \x01(\tR\x05\x65mail\x12\x1a\n\x08username\x18\x05 \x01(\tR\x08username\x12!\n\x0cphone_number\x18\x06 \x01(\tR\x0bphoneNumber\x12\x1b\n\tis_active\x18\x07 \x01(\x08R\x08isActive\x12%\n\x0ephone_verified\x18\x08 \x01(\x08R\rphoneVerified\x12%\n\x0e\x65mail_verified\x18\t \x01(\x08R\remailVerified\x12*\n\x07\x61\x64\x64ress\x18\n \x01(\x0b\x32\x10.auth.v1.AddressR\x07\x61\x64\x64ress\"\x82\x01\n\x07\x41\x64\x64ress\x12\x18\n\x07\x63ountry\x18\x01 \x01(\tR\x07\x63ountry\x12\x14\n\x05state\x18\x02 \x01(\tR\x05state\x12\x19\n\x08zip_code\x18\x03 \x01(\x05R\x07zipCode\x12\x12\n\x04\x63ity\x18\x04 \x01(\tR\x04\x63ity\x12\x18\n\x07\x61\x64\x64ress\x18\x05 \x01(\tR\x07\x61\x64\x64ress2K\n\x0b\x41uthService\x12<\n\x07GetUser\x12\x17.auth.v1.GetUserRequest\x1a\x18.auth.v1.GetUserResponseb\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n\x12\x61uth/v1/auth.proto\x12\x07\x61uth.v1\"-\n\x0eGetUserRequest\x12\x1b\n\tuser_uuid\x18\x01 \x01(\tR\x08userUuid\"\xa9\x02\n\x0fGetUserResponse\x12\x1d\n\nfirst_name\x18\x01 \x01(\tR\tfirstName\x12\x1b\n\tlast_name\x18\x02 \x01(\tR\x08lastName\x12\x1a\n\x08language\x18\x03 \x01(\tR\x08language\x12\x14\n\x05\x65mail\x18\x04 \x01(\tR\x05\x65mail\x12\x1a\n\x08username\x18\x05 \x01(\tR\x08username\x12!\n\x0cphone_number\x18\x06 \x01(\tR\x0bphoneNumber\x12\x1b\n\tis_active\x18\x07 \x01(\x08R\x08isActive\x12%\n\x0ephone_verified\x18\x08 \x01(\x08R\rphoneVerified\x12%\n\x0e\x65mail_verified\x18\t \x01(\x08R\remailVerified2K\n\x0b\x41uthService\x12<\n\x07GetUser\x12\x17.auth.v1.GetUserRequest\x1a\x18.auth.v1.GetUserResponseb\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -34,9 +34,7 @@ if not _descriptor._USE_C_DESCRIPTORS:
   _globals['_GETUSERREQUEST']._serialized_start=31
   _globals['_GETUSERREQUEST']._serialized_end=76
   _globals['_GETUSERRESPONSE']._serialized_start=79
-  _globals['_GETUSERRESPONSE']._serialized_end=420
-  _globals['_ADDRESS']._serialized_start=423
-  _globals['_ADDRESS']._serialized_end=553
-  _globals['_AUTHSERVICE']._serialized_start=555
-  _globals['_AUTHSERVICE']._serialized_end=630
+  _globals['_GETUSERRESPONSE']._serialized_end=376
+  _globals['_AUTHSERVICE']._serialized_start=378
+  _globals['_AUTHSERVICE']._serialized_end=453
 # @@protoc_insertion_point(module_scope)

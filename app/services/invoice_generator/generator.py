@@ -8,6 +8,7 @@ from app.enums.order import InvoiceTypeEnum
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.enums import TA_CENTER
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
@@ -67,9 +68,7 @@ class InvoiceGenerator:
         save_path: str | Path | None = None,
     ) -> bytes:
         info_mapping = {
-            InvoiceTypeEnum.NAVI_GRUPE_INVOICE: InvoiceTypes.get_navi_grupe_info,
-            InvoiceTypeEnum.T_AUTOLOGISTIC_INVOICE: InvoiceTypes.get_t_auto_logistics_info,
-            InvoiceTypeEnum.T_AUTOLOGISTIC_USA_INVOICE: InvoiceTypes.get_t_auto_logistics_usa_info
+            InvoiceTypeEnum.DEFAULT: InvoiceTypes.get_default_info,
         }
         if not invoice_type:
             invoice_type = self.order.invoice_type
@@ -147,13 +146,13 @@ class InvoiceGenerator:
         title_center_style = ParagraphStyle(
             "HeaderTitleCenterStyle",
             parent=header_title_style,
-            alignment="center",
+            alignment=TA_CENTER,
             leftIndent=0,
         )
         subtitle_center_style = ParagraphStyle(
             "HeaderSubtitleCenterStyle",
             parent=header_subtitle_style,
-            alignment="center",
+            alignment=TA_CENTER,
             leftIndent=0,
         )
         invoice_title_style = ParagraphStyle(
@@ -230,7 +229,7 @@ class InvoiceGenerator:
         if logo_path and logo_path.exists():
             try:
                 logo = Image(str(logo_path), width=80, height=80)
-                title_text = Paragraph("BIDAUTO.ONLINE", header_title_style)
+                title_text = Paragraph("VINAS.LT", header_title_style)
                 subtitle_text = Paragraph(str(subtitle), header_subtitle_style) if subtitle else Spacer(1, 0)
                 header_data = [
                     [logo, title_text],
@@ -269,11 +268,11 @@ class InvoiceGenerator:
                 )
                 elements.append(centered_table)
             except Exception:
-                elements.append(Paragraph("BIDAUTO.ONLINE", title_center_style))
+                elements.append(Paragraph("VINAS.LT", title_center_style))
                 if subtitle:
                     elements.append(Paragraph(str(subtitle), subtitle_center_style))
         else:
-            elements.append(Paragraph("BIDAUTO.ONLINE", title_center_style))
+            elements.append(Paragraph("VINAS.LT", title_center_style))
             if subtitle:
                 elements.append(Paragraph(str(subtitle), subtitle_center_style))
 
@@ -448,7 +447,7 @@ if __name__ == "__main__":
 
     class _DummyOrder:
         def __init__(self):
-            self.invoice_type = InvoiceTypeEnum.NAVI_GRUPE_INVOICE
+            self.invoice_type = InvoiceTypeEnum.DEFAULT
             self.vin = "TESTVIN1234567890"
             self.created_at = datetime.now(timezone.utc)
             self.auction = "COPART"

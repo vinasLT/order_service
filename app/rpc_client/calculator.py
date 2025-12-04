@@ -7,7 +7,6 @@ import grpc
 from app.config import settings
 from app.rpc_client.base_client import BaseRpcClient, T
 
-# Ensure generated proto packages are importable
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'gen', 'python'))
 
 from app.rpc_client.gen.python.calculator.v1 import calculator_pb2, calculator_pb2_grpc

@@ -54,6 +54,14 @@ async def create_order(data: OrderIn = Body(...), db: AsyncSession = Depends(get
                 raise NotFoundProblem(e.details())
             raise BadRequestProblem(e.details())
 
+    try:
+        async with DetailedInfoService() as detailed_info_service:
+            destination_data = await detailed_info_service.get_detailed_destination(destination_id=data.destination_id)
+    except grpc.aio.AioRpcError as e:
+        if e.code() == grpc.StatusCode.NOT_FOUND:
+            raise NotFoundProblem("Destination not found")
+        raise BadRequestProblem(e.details())
+
 
     try:
         order = await order_service.create(
@@ -63,6 +71,7 @@ async def create_order(data: OrderIn = Body(...), db: AsyncSession = Depends(get
                 location_city=calculator_data.location.city,
                 location_state=calculator_data.location.state,
                 location_postal_code=calculator_data.location.postal_code,
+                destination_name=destination_data.name,
                 terminal_name=calculator_data.terminal_name,
                 fee_type_name=calculator_data.fee_type.fee_type
             ), flush=True
@@ -162,6 +171,18 @@ async def update_order(
             terminal_name=calculator_data.terminal_name,
             fee_type_name=calculator_data.fee_type.fee_type,
         )
+
+    if "destination_id" in update_data:
+        try:
+            async with DetailedInfoService() as detailed_info_service:
+                destination_data = await detailed_info_service.get_detailed_destination(
+                    destination_id=update_data["destination_id"]
+                )
+            update_data["destination_name"] = destination_data.name
+        except grpc.aio.AioRpcError as e:
+            if e.code() == grpc.StatusCode.NOT_FOUND:
+                raise NotFoundProblem("Destination not found")
+            raise BadRequestProblem(e.details())
 
     if "terminal_id" in update_data:
         try:
