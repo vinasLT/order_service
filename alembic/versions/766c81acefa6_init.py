@@ -1,8 +1,8 @@
 """init
 
-Revision ID: 4972f9448be3
+Revision ID: 766c81acefa6
 Revises: 
-Create Date: 2025-11-19 22:23:46.915478
+Create Date: 2025-12-04 14:34:15.420039
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '4972f9448be3'
+revision: str = '766c81acefa6'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -26,23 +26,24 @@ def upgrade() -> None:
     sa.Column('order_date', sa.DateTime(timezone=True), nullable=False),
     sa.Column('lot_id', sa.Integer(), nullable=False),
     sa.Column('vehicle_value', sa.Integer(), nullable=False),
-    sa.Column('invoice_type', sa.Enum('NAVI_GRUPE_INVOICE', 'T_AUTOLOGISTIC_INVOICE', name='invoicetypeenum'), nullable=False),
+    sa.Column('invoice_type', sa.Enum('DEFAULT', name='invoicetypeenum'), nullable=False),
     sa.Column('vehicle_type', sa.String(), nullable=False),
     sa.Column('vin', sa.String(), nullable=False),
     sa.Column('vehicle_name', sa.String(), nullable=False),
     sa.Column('keys', sa.Boolean(), nullable=False),
     sa.Column('damage', sa.Boolean(), nullable=False),
     sa.Column('color', sa.String(), nullable=False),
+    sa.Column('tracking_link', sa.String(), nullable=True),
     sa.Column('auto_generated', sa.Boolean(), nullable=False),
     sa.Column('fee_type', sa.String(), nullable=False),
-    sa.Column('delivery_status', sa.Enum('PENDING_PAYMENT', 'PAID', 'UNPAID', 'PICKED_UP', 'DELIVERED_TERMINAL', 'NO_TITLE', name='orderstatusenum'), nullable=False),
+    sa.Column('delivery_status', sa.Enum('WON', 'PORT_CHOSEN', 'INVOICE_ADDED', 'TRACKING_ADDED', 'VEHICLE_IN_CUSTOM_AGENCY', 'CUSTOM_INVOICE_ADDED', 'DELIVERED', name='orderstatusenum'), nullable=False),
     sa.Column('location_id', sa.Integer(), nullable=False),
     sa.Column('location_name', sa.String(), nullable=False),
     sa.Column('location_city', sa.String(), nullable=True),
     sa.Column('location_state', sa.String(), nullable=True),
     sa.Column('location_postal_code', sa.String(), nullable=True),
-    sa.Column('destination_id', sa.Integer(), nullable=False),
-    sa.Column('destination_name', sa.String(), nullable=False),
+    sa.Column('destination_id', sa.Integer(), nullable=True),
+    sa.Column('destination_name', sa.String(), nullable=True),
     sa.Column('terminal_id', sa.Integer(), nullable=False),
     sa.Column('terminal_name', sa.String(), nullable=False),
     sa.Column('fee_type_id', sa.Integer(), nullable=False),
@@ -56,17 +57,6 @@ def upgrade() -> None:
     sa.UniqueConstraint('vin')
     )
     op.create_index(op.f('ix_order_id'), 'order', ['id'], unique=False)
-    op.create_table('appeals',
-    sa.Column('order_id', sa.Integer(), nullable=False),
-    sa.Column('reason', sa.String(), nullable=False),
-    sa.Column('solved', sa.Boolean(), nullable=False),
-    sa.Column('timestamp', sa.DateTime(timezone=True), nullable=False),
-    sa.Column('id', sa.Integer(), nullable=False),
-    sa.ForeignKeyConstraint(['order_id'], ['order.id'], ),
-    sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('order_id')
-    )
-    op.create_index(op.f('ix_appeals_id'), 'appeals', ['id'], unique=False)
     op.create_table('invoice_item',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(), nullable=False),
@@ -76,52 +66,24 @@ def upgrade() -> None:
     sa.ForeignKeyConstraint(['order_id'], ['order.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_table('order_depth_video',
-    sa.Column('order_id', sa.Integer(), nullable=False),
-    sa.Column('video_url', sa.String(), nullable=True),
-    sa.Column('requested', sa.Boolean(), nullable=False),
-    sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
-    sa.Column('id', sa.Integer(), nullable=False),
-    sa.ForeignKeyConstraint(['order_id'], ['order.id'], ),
-    sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('order_id')
-    )
-    op.create_index(op.f('ix_order_depth_video_id'), 'order_depth_video', ['id'], unique=False)
     op.create_table('order_status_history',
     sa.Column('order_id', sa.Integer(), nullable=False),
-    sa.Column('status', sa.Enum('PENDING_PAYMENT', 'PAID', 'UNPAID', 'PICKED_UP', 'DELIVERED_TERMINAL', 'NO_TITLE', name='orderstatusenum'), nullable=False),
+    sa.Column('status', sa.Enum('WON', 'PORT_CHOSEN', 'INVOICE_ADDED', 'TRACKING_ADDED', 'VEHICLE_IN_CUSTOM_AGENCY', 'CUSTOM_INVOICE_ADDED', 'DELIVERED', name='orderstatusenum'), nullable=False),
     sa.Column('changed_at', sa.DateTime(timezone=True), nullable=False),
     sa.Column('id', sa.Integer(), nullable=False),
     sa.ForeignKeyConstraint(['order_id'], ['order.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_order_status_history_id'), 'order_status_history', ['id'], unique=False)
-    op.create_table('appeal_messages',
-    sa.Column('appeal_id', sa.Integer(), nullable=False),
-    sa.Column('message', sa.String(), nullable=True),
-    sa.Column('role', sa.Enum('USER', 'ADMIN', name='appealmessageroleenum'), nullable=False),
-    sa.Column('seen', sa.Boolean(), nullable=False),
-    sa.Column('timestamp', sa.DateTime(timezone=True), nullable=False),
-    sa.Column('id', sa.Integer(), nullable=False),
-    sa.ForeignKeyConstraint(['appeal_id'], ['appeals.id'], ),
-    sa.PrimaryKeyConstraint('id')
-    )
-    op.create_index(op.f('ix_appeal_messages_id'), 'appeal_messages', ['id'], unique=False)
     # ### end Alembic commands ###
 
 
 def downgrade() -> None:
     """Downgrade schema."""
     # ### commands auto generated by Alembic - please adjust! ###
-    op.drop_index(op.f('ix_appeal_messages_id'), table_name='appeal_messages')
-    op.drop_table('appeal_messages')
     op.drop_index(op.f('ix_order_status_history_id'), table_name='order_status_history')
     op.drop_table('order_status_history')
-    op.drop_index(op.f('ix_order_depth_video_id'), table_name='order_depth_video')
-    op.drop_table('order_depth_video')
     op.drop_table('invoice_item')
-    op.drop_index(op.f('ix_appeals_id'), table_name='appeals')
-    op.drop_table('appeals')
     op.drop_index(op.f('ix_order_id'), table_name='order')
     op.drop_table('order')
     # ### end Alembic commands ###

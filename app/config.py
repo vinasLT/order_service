@@ -31,8 +31,8 @@ class Settings(BaseSettings):
     ENVIRONMENT: Environment = Environment.DEVELOPMENT
 
     # RPC
-    RPC_CALCULATOR_URL: str = "localhost:50051"
-    RPC_API_URL: str = "localhost:50052"
+    RPC_CALCULATOR_URL: str = "localhost:50052"
+    RPC_API_URL: str = "localhost:50051"
     RPC_AUTH_URL: str = "localhost:50054"
 
     @property

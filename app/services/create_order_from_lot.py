@@ -1,3 +1,5 @@
+import asyncio
+import uuid
 from datetime import datetime, timezone
 
 from app.core.utils import get_cheapest_terminal_prices
@@ -20,7 +22,9 @@ class GenerateFromLot:
 
     async def _get_lot(self) -> Lot:
         async with ApiRpcClient() as client:
-            response = await client.get_lot_by_vin_or_lot_id(vin_or_lot_id=self.lot_id, site=self.auction.value)
+            response = await client.get_lot_by_vin_or_lot_id(
+                vin_or_lot_id=str(self.lot_id), site=self.auction.value
+            )
         if not response.lot:
             raise ValueError("Lot not found")
         return response.lot[0]
@@ -32,7 +36,7 @@ class GenerateFromLot:
             calculator = await client.get_calculator_with_data(
                 price=vehicle_value,
                 auction=lot.base_site,
-                vehicle_type=lot.vehicle_type,
+                vehicle_type="MOTO" if lot.vehicle_type == 'Motorcycle' else "CAR",
                 location=lot.location,
             )
         return calculator
@@ -162,3 +166,16 @@ class GenerateFromLot:
             await db.commit()
 
             return order
+
+
+if __name__ == "__main__":
+    lot_id = 91467725
+    auction = AuctionEnum.COPART
+    user_uuid = 'acd4532b-014a-434f-b946-154a95e763b5'
+    bid_amount = 1000
+    generator = GenerateFromLot(lot_id=lot_id, auction=auction, user_uuid=user_uuid)
+
+    async def main():
+        await generator.generate()
+
+    asyncio.run(main())
