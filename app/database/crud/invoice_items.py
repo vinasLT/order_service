@@ -1,5 +1,6 @@
 from typing import Sequence
 
+from sqlalchemy import select, Select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database.crud.base import BaseService
@@ -23,3 +24,13 @@ class InvoiceItemService(BaseService[InvoiceItems, InvoiceItemCreate, InvoiceIte
             await self.session.refresh(invoice_item)
 
         return list(invoice_items)
+
+    async def get_by_order_id(
+        self, order_id: int, get_stmt: bool = True
+    ) -> Sequence[InvoiceItems] | Select[InvoiceItems]:
+        query: Select[InvoiceItems] = select(InvoiceItems).where(InvoiceItems.order_id == order_id)
+        if get_stmt:
+            return query
+
+        result = await self.session.execute(query)
+        return result.scalars().all()

@@ -169,7 +169,7 @@ class GenerateFromLot:
             )
             items.append(
                 InvoiceItemCreate(
-                    name=f"Ocean Shipping ({order.terminal_name})",
+                    name=f"Ocean Shipping ({order.destination_name})",
                     amount=ocean_city.price if ocean_city else 0,
                     order_id=order.id,
                 )
