@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from app.core.utils import get_cheapest_terminal_prices
 from app.database.crud import OrderService
 from app.database.db.session import get_db_context
+from app.database.models import Order
 from app.database.schemas import InvoiceItemCreate, OrderCreate
 from app.enums.auction import AuctionEnum
 from app.rpc_client.auction_api import ApiRpcClient
@@ -40,22 +41,35 @@ class GenerateFromLot:
             )
         return calculator
 
+    @staticmethod
+    async def get_calculator_from_order(order: Order)-> calculator_pb2.GetCalculatorWithDataResponse:
+        async with CalculatorRpcClient() as client:
+            calculator = await client.get_calculator_with_data(
+                price=order.vehicle_value,
+                auction=order.auction,
+                vehicle_type=order.vehicle_type,
+                location=order.location_name
+            )
+        return calculator
+
     async def generate(self):
+
         lot = await self._get_lot()
-        vehicle_value = next(
-            (
-                value
-                for value in [self.bid_amount, getattr(lot, "purchase_price", 0), getattr(lot, "current_bid", 0), getattr(lot, "price_future", 0), getattr(lot, "price_new", 0)]
-                if value
-            ),
-            0,
-        )
-        calculator = await self._get_calculator_data(lot, vehicle_value)
+        async with get_db_context() as db:
+            order_service = OrderService(db)
+            if await order_service.exists_by_lot_id(lot.lot_id):
+                raise ValueError("Order with this lot_id already exists")
+            if await order_service.exists_by_vin(lot.vin):
+                raise ValueError("Order with this VIN already exists")
+
+        calculator = await self._get_calculator_data(lot, self.bid_amount)
         detailed_data = calculator.detailed_data
         if not detailed_data.terminals:
             raise ValueError("Calculator response missing terminals")
         if not detailed_data.available_destinations:
             raise ValueError("Calculator response missing destinations")
+
+
 
         terminal = detailed_data.terminals[0]
         destination = detailed_data.available_destinations[0]
@@ -70,9 +84,6 @@ class GenerateFromLot:
         if not default_calculator:
             raise ValueError("Calculator response missing calculator data")
 
-        transportation_city = None
-        ocean_city = None
-        terminal_name_for_order = terminal.terminal_name
         terminal_id_for_order = terminal_id
         cheapest_terminal = get_cheapest_terminal_prices(default_calculator)
         if cheapest_terminal:
@@ -84,19 +95,14 @@ class GenerateFromLot:
             )
             if matching_terminal:
                 terminal_id_for_order = matching_terminal.terminal_id
-        async with get_db_context() as db:
-            order_service = OrderService(db)
-            if await order_service.exists_by_lot_id(lot.lot_id):
-                raise ValueError("Order with this lot_id already exists")
-            if await order_service.exists_by_vin(lot.vin):
-                raise ValueError("Order with this VIN already exists")
+
 
             order = await order_service.create(
                 OrderCreate(
                     auction=self.auction,
                     order_date=datetime.now(timezone.utc),
                     lot_id=lot.lot_id,
-                    vehicle_value=vehicle_value,
+                    vehicle_value=self.bid_amount,
                     vehicle_type="MOTO" if lot.vehicle_type == 'Motorcycle' else "CAR",
                     vin=lot.vin,
                     vehicle_name=lot.title,
@@ -121,15 +127,6 @@ class GenerateFromLot:
                 flush=True,
             )
 
-            items = self.build_invoice_items_from_order_data(
-                order=order,
-                default_calculator=default_calculator,
-                cheapest_terminal=cheapest_terminal,
-                transportation_city=transportation_city,
-                ocean_city=ocean_city,
-            )
-
-            await order_service.create_invoice_items_batch(order.id, items)
             await db.commit()
 
             return order
@@ -140,9 +137,6 @@ class GenerateFromLot:
         *,
         order,
         default_calculator: calculator_pb2.DefaultCalculator,
-        cheapest_terminal,
-        transportation_city,
-        ocean_city,
     ) -> list[InvoiceItemCreate]:
         items = [
             InvoiceItemCreate(
@@ -163,7 +157,9 @@ class GenerateFromLot:
             if fee.price
         )
 
-        if cheapest_terminal:
+        cheapest_prices = get_cheapest_terminal_prices(default_calculator)
+        if cheapest_prices:
+            transportation_city, ocean_city = cheapest_prices
             items.append(
                 InvoiceItemCreate(
                     name=f"Transportation ({order.terminal_name})",

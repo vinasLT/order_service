@@ -8,6 +8,7 @@ class Permissions(str, Enum):
     ORDER_ALL_DELETE = "order.all:delete"
 
     ORDER_OWN_READ = "order.own:read"
+    ORDER_OWN_WRITE = "order.own:write"
 
 class Environment(str, Enum):
     DEVELOPMENT = "development"

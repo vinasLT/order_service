@@ -9,6 +9,7 @@ from fastapi_pagination.customization import CustomizedPage, UseParamsFields, Us
 from pydantic import BaseModel
 
 from app.config import settings
+from app.rpc_client.gen.python.calculator.v1 import calculator_pb2
 from app.rpc_client.gen.python.calculator.v1.calculator_pb2 import City
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -39,7 +40,7 @@ def get_ocean_options(calculator) -> dict[str, City]:
     }
 
 
-def get_cheapest_terminal_prices(calculator) -> tuple[City, City] | None:
+def get_cheapest_terminal_prices(calculator: calculator_pb2.DefaultCalculator) -> tuple[City, City] | None:
     """
     Returns (transportation_city, ocean_city) for the cheapest transportation + ocean combo.
     Ignores entries that miss either component.
