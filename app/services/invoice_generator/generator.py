@@ -17,12 +17,11 @@ from app.services.invoice_generator.invoice_types import InvoiceTypes, BaseInvoi
 
 
 class InvoiceGenerator:
-    def __init__(self, order: Order):
+    def __init__(self, order: Order, user=None):
         self.order = order
+        self.user = user
 
     def _load_user_via_rpc(self):
-        if not getattr(self.order, "user_uuid", None):
-            return None
 
         async def _fetch():
             async with AuthRpcClient() as client:
@@ -44,7 +43,7 @@ class InvoiceGenerator:
 
     def _build_invoice_to_lines(self) -> list[str]:
         lines: list[str] = []
-        user = self._load_user_via_rpc()
+        user = self.user or self._load_user_via_rpc()
         if user:
             full_name = f"{user.first_name} {user.last_name}".strip()
             if full_name:
@@ -53,9 +52,6 @@ class InvoiceGenerator:
                 lines.append(user.email)
             if user.phone_number:
                 lines.append('+' + user.phone_number)
-            if user.address:
-                user_address = user.address
-                lines.extend([user_address.address, user_address.city, user_address.state, user_address.country, str(user_address.zip_code)])
 
         elif getattr(self.order, "user_uuid", None):
             lines.append(f"User UUID: {self.order.user_uuid}")

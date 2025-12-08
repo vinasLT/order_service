@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
 from sqlalchemy import DateTime, Enum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -11,7 +11,7 @@ from ..mixins import IdMixin, TimestampMixin
 
 
 if TYPE_CHECKING:
-    from app.database.models import OrderStatusHistory, InvoiceItems
+    from app.database.models import CustomInvoice, InvoiceItems, OrderStatusHistory
 
 
 class Order(IdMixin, TimestampMixin, Base):
@@ -72,4 +72,8 @@ class Order(IdMixin, TimestampMixin, Base):
 
     status_history: Mapped[list["OrderStatusHistory"]] = relationship(
         "OrderStatusHistory", back_populates="order", cascade="all, delete-orphan", lazy="selectin"
+    )
+
+    custom_invoice: Mapped[Optional["CustomInvoice"]] = relationship(
+        "CustomInvoice", back_populates="order", cascade="all, delete-orphan", uselist=False, lazy="selectin"
     )

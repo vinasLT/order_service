@@ -4,12 +4,16 @@ from fastapi import APIRouter, Depends, Body
 from rfc9457 import ForbiddenProblem, NotFoundProblem, BadRequestProblem
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import Permissions
+from app.core.logger import logger
 from app.database.crud import OrderService
 from app.database.db.session import get_async_db
 from app.database.schemas import OrderRead, OrderUpdate
 from app.enums.order import OrderStatusEnum
 from app.schemas.destination import DestinationOut
 from app.services.create_order_from_lot import GenerateFromLot
+from app.services.send_notification import send_status_change_notifications
+from app.rpc_client.auth import AuthRpcClient
+from app.services.rabbit_service.service import RabbitMQPublisher
 
 choose_destination_router = APIRouter()
 
@@ -44,7 +48,8 @@ async def choose_destination(
 
     destination_name = destinations_mapped[destination_id]
 
-    order = await order_service.update(
+    previous_status = order.delivery_status
+    updated_order = await order_service.update(
         order_id,
         OrderUpdate(
             destination_id=destination_id,
@@ -59,8 +64,12 @@ async def choose_destination(
 
     await order_service.create_invoice_items_batch(order_id, invoice_items)
 
-
-    #TODO: Add notification that status changed
+    await send_status_change_notifications(
+        updated_order,
+        previous_status,
+        user_uuid=user.uuid,
+        is_telegram=True,
+    )
 
     return order
 
@@ -92,8 +101,6 @@ async def available_destinations(
         ))
 
     return destinations
-
-
 
 
 

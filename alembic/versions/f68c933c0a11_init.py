@@ -1,8 +1,8 @@
 """init
 
-Revision ID: 766c81acefa6
+Revision ID: f68c933c0a11
 Revises: 
-Create Date: 2025-12-04 14:34:15.420039
+Create Date: 2025-12-08 17:04:17.971164
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision: str = '766c81acefa6'
+revision: str = 'f68c933c0a11'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -57,6 +57,18 @@ def upgrade() -> None:
     sa.UniqueConstraint('vin')
     )
     op.create_index(op.f('ix_order_id'), 'order', ['id'], unique=False)
+    op.create_table('custom_invoice',
+    sa.Column('file_id', sa.Integer(), nullable=False),
+    sa.Column('order_id', sa.Integer(), nullable=False),
+    sa.Column('status', sa.Enum('PENDING', 'AVAILABLE', name='custominvoicestatus'), nullable=False),
+    sa.Column('id', sa.Integer(), nullable=False),
+    sa.Column('created_at', sa.DateTime(timezone=True), nullable=False),
+    sa.Column('updated_at', sa.DateTime(timezone=True), nullable=False),
+    sa.ForeignKeyConstraint(['order_id'], ['order.id'], ),
+    sa.PrimaryKeyConstraint('id'),
+    sa.UniqueConstraint('order_id')
+    )
+    op.create_index(op.f('ix_custom_invoice_id'), 'custom_invoice', ['id'], unique=False)
     op.create_table('invoice_item',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('name', sa.String(), nullable=False),
@@ -84,6 +96,8 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_order_status_history_id'), table_name='order_status_history')
     op.drop_table('order_status_history')
     op.drop_table('invoice_item')
+    op.drop_index(op.f('ix_custom_invoice_id'), table_name='custom_invoice')
+    op.drop_table('custom_invoice')
     op.drop_index(op.f('ix_order_id'), table_name='order')
     op.drop_table('order')
     # ### end Alembic commands ###

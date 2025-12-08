@@ -2,14 +2,18 @@ from contextlib import asynccontextmanager
 from typing import Optional, Callable
 
 import redis
+from aio_pika import connect_robust
 from fastapi import FastAPI
 from fastapi_pagination import add_pagination
 from fastapi_problem.handler import new_exception_handler, add_exception_handler
 
+from app.database.db.session import AsyncSessionLocal
 from app.routers import api_router
 from app.config import settings
 from app.core.logger import logger
 from app.core.utils import init_fastapi_cache
+from app.services.rabbit_service.file_routing_keys import RoutingKeys
+from app.services.rabbit_service.order_consumer import OrderRabbitConsumer
 
 
 def setup_middleware_and_handlers(app: FastAPI):
@@ -28,9 +32,20 @@ def create_app(
 ) -> FastAPI:
     @asynccontextmanager
     async def default_lifespan(_: FastAPI):
+        connection = await connect_robust(settings.RABBITMQ_URL)
+        consumer = OrderRabbitConsumer(
+            AsyncSessionLocal,
+            connection,
+            [member.value for member in RoutingKeys],
+
+        )
+        await consumer.set_up()
+        await consumer.start_consuming()
+
         init_fastapi_cache(custom_redis_client)
         logger.info(f"{settings.APP_NAME} started!")
         yield
+        await consumer.stop_consuming()
 
 
     docs_url = "/docs" if settings.enable_docs else None

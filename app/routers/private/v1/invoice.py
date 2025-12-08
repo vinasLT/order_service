@@ -1,5 +1,6 @@
 from io import BytesIO
 
+import grpc.aio
 from AuthTools import HeaderUser
 from AuthTools.Permissions.dependencies import require_one_of_permissions
 from fastapi import APIRouter, Depends
@@ -11,6 +12,7 @@ from app.config import Permissions
 from app.database.crud import OrderService
 from app.database.db.session import get_async_db
 from app.enums.order import OrderStatusEnum
+from app.rpc_client.auth import AuthRpcClient
 from app.services.invoice_generator.generator import InvoiceGenerator
 
 
