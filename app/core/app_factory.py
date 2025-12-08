@@ -1,7 +1,6 @@
 from contextlib import asynccontextmanager
 from typing import Optional, Callable
 
-import redis
 from aio_pika import connect_robust
 from fastapi import FastAPI
 from fastapi_pagination import add_pagination
@@ -11,7 +10,6 @@ from app.database.db.session import AsyncSessionLocal
 from app.routers import api_router
 from app.config import settings
 from app.core.logger import logger
-from app.core.utils import init_fastapi_cache
 from app.services.rabbit_service.file_routing_keys import RoutingKeys
 from app.services.rabbit_service.order_consumer import OrderRabbitConsumer
 
@@ -27,7 +25,6 @@ def setup_routers(app: FastAPI):
         return {"status": "ok"}
 
 def create_app(
-        custom_redis_client: Optional[redis.Redis] = None,
         lifespan_override: Optional[Callable] = None
 ) -> FastAPI:
     @asynccontextmanager
@@ -42,7 +39,6 @@ def create_app(
         await consumer.set_up()
         await consumer.start_consuming()
 
-        init_fastapi_cache(custom_redis_client)
         logger.info(f"{settings.APP_NAME} started!")
         yield
         await consumer.stop_consuming()

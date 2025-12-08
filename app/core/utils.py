@@ -1,24 +1,14 @@
 from pathlib import Path
 
-import redis
 from fastapi import Query
-from fastapi_cache import FastAPICache
-from fastapi_cache.backends.redis import RedisBackend
 from fastapi_pagination import Page
 from fastapi_pagination.customization import CustomizedPage, UseParamsFields, UseFieldsAliases
 from pydantic import BaseModel
 
-from app.config import settings
 from app.rpc_client.gen.python.calculator.v1 import calculator_pb2
 from app.rpc_client.gen.python.calculator.v1.calculator_pb2 import City
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
-def init_fastapi_cache(custom_redis_client = None):
-    if not custom_redis_client:
-        redis_client = redis.Redis.from_url(settings.REDIS_URL)
-    else:
-        redis_client = custom_redis_client
-    FastAPICache.init(RedisBackend(redis_client), prefix="fastapi-cache")
 
 
 
