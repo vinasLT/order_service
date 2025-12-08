@@ -20,7 +20,8 @@ dependencies = [
     "greenlet (>=3.2.4,<4.0.0)",
     "fastapi-pagination (>=0.15.0,<0.16.0)",
     "reportlab (>=4.4.5,<5.0.0)",
-    "aio-pika (>=9.5.8,<10.0.0)"
+    "aio-pika (>=9.5.8,<10.0.0)",
+    "psycopg2-binary (>=2.9.11,<3.0.0)"
 ]
 
 
