@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 env:
-  IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/bidauto_web_order_service
+  IMAGE_NAME: ${{ secrets.DOCKERHUB_USERNAME }}/vinaslt_order_service
   IMAGE_TAG: ${{ github.ref_name == 'main' && 'main' || 'dev' }}
   CACHE_SCOPE: ${{ github.ref_name }}
 
