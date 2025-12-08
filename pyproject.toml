@@ -21,7 +21,8 @@ dependencies = [
     "fastapi-pagination (>=0.15.0,<0.16.0)",
     "reportlab (>=4.4.5,<5.0.0)",
     "aio-pika (>=9.5.8,<10.0.0)",
-    "psycopg2-binary (>=2.9.11,<3.0.0)"
+    "psycopg2-binary (>=2.9.11,<3.0.0)",
+    "uvicorn (>=0.38.0,<0.39.0)"
 ]
 
 
