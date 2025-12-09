@@ -4,7 +4,6 @@ from pydantic import BaseModel, ConfigDict, Field
 from app.enums.auction import AuctionEnum
 from app.enums.order import InvoiceTypeEnum, OrderStatusEnum
 
-
 class OrderBase(BaseModel):
     auction: AuctionEnum | None = Field(..., description="Source auction")
     order_date: datetime | None = Field(

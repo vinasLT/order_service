@@ -215,6 +215,30 @@ async def update_order(
         raise NotFoundProblem("Order not found")
     return updated_order
 
+
+@order_router.get(
+    "/{order_id}",
+    response_model=OrderRead,
+    description=f"Get order by id, required permissions: {Permissions.ORDER_ALL_READ.value}",
+    dependencies=[Depends(require_permissions(Permissions.ORDER_ALL_READ))],
+)
+async def get_order(order_id: int, db: AsyncSession = Depends(get_async_db)):
+    order_service = OrderService(db)
+    return await order_service.get_with_not_found_exception(order_id, "Order")
+
+
+@order_router.delete(
+    "/{order_id}",
+    description=f"Delete order, required permissions: {Permissions.ORDER_ALL_DELETE.value}",
+    dependencies=[Depends(require_permissions(Permissions.ORDER_ALL_DELETE))],
+)
+async def delete_order(order_id: int, db: AsyncSession = Depends(get_async_db)):
+    order_service = OrderService(db)
+    deleted = await order_service.delete(order_id)
+    if not deleted:
+        raise NotFoundProblem("Order not found")
+    return {"status": "deleted"}
+
 OrdersPage = create_pagination_page(OrderRead)
 
 class OrderSearch(BaseModel):
