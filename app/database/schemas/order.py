@@ -23,7 +23,6 @@ class OrderBase(BaseModel):
     damage: bool = Field(default=False, description="Vehicle damaged")
     color: str = Field(default="Unknown", description="Vehicle color")
     auto_generated: bool = Field(default=False, description="Order created automatically")
-    fee_type: str = Field(..., description="Name of the fee type")
 
     location_id: int = Field(..., description="Location ID")
 

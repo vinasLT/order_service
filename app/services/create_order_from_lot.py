@@ -181,7 +181,7 @@ class GenerateFromLot:
 if __name__ == "__main__":
     lot_id = 91467725
     auction = AuctionEnum.COPART
-    user_uuid = 'acd4532b-014a-434f-b946-154a95e763b5'
+    user_uuid = 'f326d8f8-d184-4ca5-bb30-066322c02358'
     bid_amount = 1000
     generator = GenerateFromLot(lot_id=lot_id, auction=auction, user_uuid=user_uuid, bid_amount=100)
 
