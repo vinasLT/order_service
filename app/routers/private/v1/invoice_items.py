@@ -10,6 +10,7 @@ from app.core.utils import create_pagination_page
 from app.database.crud import InvoiceItemService, OrderService
 from app.database.db.session import get_async_db
 from app.database.schemas import InvoiceItemCreate, InvoiceItemRead, InvoiceItemUpdate
+from app.schemas.invoice_item import InvoiceItemIn
 
 invoice_items_router = APIRouter(prefix="/{order_id}/invoice-item", tags=["Invoice Items"])
 
@@ -66,7 +67,7 @@ async def create_invoice_item(
 async def update_invoice_item(
     order_id: int,
     invoice_item_id: int,
-    data: InvoiceItemUpdate = Body(...),
+    data: InvoiceItemIn = Body(...),
     db: AsyncSession = Depends(get_async_db),
 ):
     order_service = OrderService(db)
