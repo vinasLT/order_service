@@ -41,18 +41,26 @@ class OrderService(BaseService[Order, OrderCreate, OrderUpdate]):
         return await invoice_service.create_batch(normalized_items)
 
     async def get_all_with_search(
-            self,
-            search: str | None = None,
-            get_stmt: bool = True
-    )-> Select[tuple[Order]] | Sequence[Order]:
-        stmt = select(Order).where(or_(
-            Order.vin.ilike(f"%{search}%"),
-            Order.auction.ilike(f'%{search}%'),
-            Order.lot_id.ilike(f'%{search}%'),
-            Order.vehicle_name.ilike(f'%{search}%')
-            )) if search else select(Order)
+        self,
+        search: str | None = None,
+        get_stmt: bool = True,
+        user_uuid: str | None = None,
+    ) -> Select[tuple[Order]] | Sequence[Order]:
+        stmt = select(Order)
+
+        if user_uuid:
+            stmt = stmt.where(Order.user_uuid == user_uuid)
+
+        if search:
+            stmt = stmt.where(
+                or_(
+                    Order.vin.ilike(f"%{search}%"),
+                    Order.auction.ilike(f"%{search}%"),
+                    Order.lot_id.ilike(f"%{search}%"),
+                    Order.vehicle_name.ilike(f"%{search}%"),
+                )
+            )
         if get_stmt:
             return stmt
         result = await self.session.execute(stmt)
         return result.scalars().all()
-

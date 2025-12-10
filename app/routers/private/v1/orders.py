@@ -1,4 +1,5 @@
 import grpc.aio
+from AuthTools import HeaderUser
 from AuthTools.Permissions.dependencies import require_permissions
 from fastapi import APIRouter, Depends, Body
 from pydantic import BaseModel
@@ -41,7 +42,7 @@ async def create_order(data: OrderIn = Body(...), db: AsyncSession = Depends(get
 
     async with AuthRpcClient() as auth_client:
         try:
-            await auth_client.get_user(data.user_uuid)
+            await auth_client.get_user(user_uuid=data.user_uuid)
         except grpc.aio.AioRpcError as e:
             if e.code() == grpc.StatusCode.NOT_FOUND:
                 raise NotFoundProblem(e.details())
@@ -243,6 +244,22 @@ OrdersPage = create_pagination_page(OrderRead)
 
 class OrderSearch(BaseModel):
     search: str | None = None
+
+
+@order_router.get(
+    "/my",
+    response_model=OrdersPage,
+    description=f"Get user's own orders, required permissions: {Permissions.ORDER_OWN_READ.value}",
+)
+async def get_user_orders(
+    data: OrderSearch = Depends(),
+    user: HeaderUser = Depends(require_permissions(Permissions.ORDER_OWN_READ)),
+    db: AsyncSession = Depends(get_async_db),
+):
+    order_service = OrderService(db)
+    stmt = await order_service.get_all_with_search(data.search, user_uuid=user.uuid)
+    return await paginate(db, stmt)
+
 
 @order_router.get(
     '',
