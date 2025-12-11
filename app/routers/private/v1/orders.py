@@ -9,6 +9,7 @@ from sqlalchemy.exc import IntegrityError
 
 from fastapi_pagination.ext.sqlalchemy import paginate
 from app.config import Permissions
+from app.core.logger import logger
 from app.core.utils import get_cheapest_terminal_prices, create_pagination_page
 from app.database.crud import OrderService
 from app.database.db.session import get_async_db
@@ -44,6 +45,14 @@ async def create_order(data: OrderIn = Body(...), db: AsyncSession = Depends(get
         try:
             await auth_client.get_user(user_uuid=data.user_uuid)
         except grpc.aio.AioRpcError as e:
+            logger.error(
+                "Auth service failed while validating user for order creation",
+                extra={
+                    "user_uuid": data.user_uuid,
+                    "status_code": e.code().name if e.code() else None,
+                    "details": e.details(),
+                },
+            )
             if e.code() == grpc.StatusCode.NOT_FOUND:
                 raise NotFoundProblem(e.details())
             raise BadRequestProblem(e.details())
@@ -54,6 +63,16 @@ async def create_order(data: OrderIn = Body(...), db: AsyncSession = Depends(get
             fee_type_data = await detailed_info_service.get_detailed_fee_type(fee_type_id=data.fee_type_id)
             destination_data = await detailed_info_service.get_detailed_destination(destination_id=data.destination_id)
     except grpc.aio.AioRpcError as e:
+        logger.error(
+            "Detailed info service failed during order creation",
+            extra={
+                "location_id": data.location_id,
+                "fee_type_id": data.fee_type_id,
+                "destination_id": data.destination_id,
+                "status_code": e.code().name if e.code() else None,
+                "details": e.details(),
+            },
+        )
         if e.code() == grpc.StatusCode.NOT_FOUND:
             raise NotFoundProblem(e.details())
         raise BadRequestProblem(e.details())
@@ -69,6 +88,16 @@ async def create_order(data: OrderIn = Body(...), db: AsyncSession = Depends(get
                 destination=destination_data.name,
             )
         except grpc.aio.AioRpcError as e:
+            logger.error(
+                "Calculator service failed during order creation",
+                extra={
+                    "location": location_data.name,
+                    "fee_type": fee_type_data.fee_type,
+                    "destination": destination_data.name,
+                    "status_code": e.code().name if e.code() else None,
+                    "details": e.details(),
+                },
+            )
             if e.code() == grpc.StatusCode.NOT_FOUND:
                 raise NotFoundProblem(e.details())
             raise BadRequestProblem(e.details())
@@ -148,6 +177,10 @@ async def create_order(data: OrderIn = Body(...), db: AsyncSession = Depends(get
         await db.commit()
 
     except IntegrityError:
+        logger.error(
+            "Integrity error while creating order",
+            extra={"lot_id": data.lot_id, "vin": data.vin},
+        )
         await db.rollback()
         raise BadRequestProblem("Order already exists")
     return order
@@ -189,6 +222,16 @@ async def update_order(
                 location_data = await detailed_info_service.get_detailed_location(location_id=location_id)
                 fee_type_data = await detailed_info_service.get_detailed_fee_type(fee_type_id=fee_type_id)
         except grpc.aio.AioRpcError as e:
+            logger.error(
+                "Detailed info service failed during order update",
+                extra={
+                    "order_id": order_id,
+                    "location_id": location_id,
+                    "fee_type_id": fee_type_id,
+                    "status_code": e.code().name if e.code() else None,
+                    "details": e.details(),
+                },
+            )
             if e.code() == grpc.StatusCode.NOT_FOUND:
                 raise NotFoundProblem(e.details())
             raise BadRequestProblem(e.details())
@@ -203,6 +246,16 @@ async def update_order(
                     location=location_data.name,
                 )
             except grpc.aio.AioRpcError as e:
+                logger.error(
+                    "Calculator service failed during order update",
+                    extra={
+                        "order_id": order_id,
+                        "location": location_data.name,
+                        "fee_type": fee_type_data.fee_type,
+                        "status_code": e.code().name if e.code() else None,
+                        "details": e.details(),
+                    },
+                )
                 if e.code() == grpc.StatusCode.NOT_FOUND:
                     raise NotFoundProblem(e.details())
                 raise BadRequestProblem(e.details())
@@ -240,6 +293,15 @@ async def update_order(
                 )
             update_data["destination_name"] = destination_data.name
         except grpc.aio.AioRpcError as e:
+            logger.error(
+                "Detailed info service failed while updating destination",
+                extra={
+                    "order_id": order_id,
+                    "destination_id": update_data["destination_id"],
+                    "status_code": e.code().name if e.code() else None,
+                    "details": e.details(),
+                },
+            )
             if e.code() == grpc.StatusCode.NOT_FOUND:
                 raise NotFoundProblem("Destination not found")
             raise BadRequestProblem(e.details())
@@ -250,6 +312,15 @@ async def update_order(
                 terminal_data = await detailed_info_service.get_detailed_terminal(terminal_id=update_data["terminal_id"])
             terminal_name = terminal_data.name
         except grpc.aio.AioRpcError as e:
+            logger.error(
+                "Detailed info service failed while updating terminal",
+                extra={
+                    "order_id": order_id,
+                    "terminal_id": update_data["terminal_id"],
+                    "status_code": e.code().name if e.code() else None,
+                    "details": e.details(),
+                },
+            )
             if e.code() == grpc.StatusCode.NOT_FOUND:
                 raise NotFoundProblem("Terminal not found")
             raise BadRequestProblem(e.details())
@@ -260,6 +331,10 @@ async def update_order(
     try:
         updated_order = await order_service.update(order_id, OrderUpdate(**update_data))
     except IntegrityError:
+        logger.error(
+            "Integrity error while updating order",
+            extra={"order_id": order_id, "lot_id": update_data.get("lot_id"), "vin": update_data.get("vin")},
+        )
         await db.rollback()
         raise BadRequestProblem("Order already exists")
 
