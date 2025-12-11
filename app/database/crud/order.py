@@ -1,6 +1,6 @@
 from typing import Sequence, Any, Coroutine
 
-from sqlalchemy import select, or_, Select, Row, RowMapping
+from sqlalchemy import select, or_, Select, Row, RowMapping, cast, String
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database.crud.base import BaseService
@@ -55,8 +55,8 @@ class OrderService(BaseService[Order, OrderCreate, OrderUpdate]):
             stmt = stmt.where(
                 or_(
                     Order.vin.ilike(f"%{search}%"),
-                    Order.auction.ilike(f"%{search}%"),
-                    Order.lot_id.ilike(f"%{search}%"),
+                    cast(Order.auction, String).ilike(f"%{search}%"),
+                    cast(Order.lot_id, String).ilike(f"%{search}%"),
                     Order.vehicle_name.ilike(f"%{search}%"),
                 )
             )
