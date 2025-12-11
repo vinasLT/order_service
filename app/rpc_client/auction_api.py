@@ -25,7 +25,7 @@ class ApiRpcClient(BaseRpcClient[lot_pb2_grpc.LotServiceStub]):
 
     async def get_lot_by_vin_or_lot_id(self, vin_or_lot_id: str, site: str = None) -> lot_pb2.GetLotByVinOrLotResponse:
         data = lot_pb2.GetLotByVinOrLotRequest(vin_or_lot_id=vin_or_lot_id, site=site)
-        return await self._execute_request(self.stub.GetLotByVinOrLot, data)
+        return await self._execute_request(self.stub.GetLotByVinOrLot, data, timeout=10)
 
     async def get_current_bid(self, lot_id: int, site: str) -> lot_pb2.GetCurrentBidResponse:
         data = lot_pb2.GetCurrentBidRequest(lot_id=lot_id, site=site)
