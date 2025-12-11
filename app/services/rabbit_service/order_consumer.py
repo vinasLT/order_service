@@ -2,9 +2,10 @@ import json
 
 from aio_pika.abc import AbstractIncomingMessage
 from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
+from sqlalchemy.exc import IntegrityError
 
 from app.core.logger import logger
-from app.database.crud import CustomInvoiceService
+from app.database.crud import CustomInvoiceService, OrderService
 from app.database.schemas import CustomInvoiceUpdate
 from app.enums.auction import AuctionEnum
 from app.enums.custom_invoice_status import CustomInvoiceStatus
@@ -51,6 +52,14 @@ class OrderRabbitConsumer(RabbitBaseService):
 
             lot_id = payload.get("lot_id")
             bid_amount = payload.get("bid_amount")
+            async with self.db_session_factory() as session:
+                order_service = OrderService(session)
+                if await order_service.exists_by_lot_id(lot_id):
+                    logger.info(
+                        "Order already exists for lot, skipping duplicate bid won",
+                        extra={"lot_id": lot_id, "user_uuid": user_uuid},
+                    )
+                    return
             try:
                 auction_enum = AuctionEnum(auction.upper() if auction else "UNKNOWN")
             except Exception:
@@ -68,6 +77,11 @@ class OrderRabbitConsumer(RabbitBaseService):
                     bid_amount=bid_amount,
                 )
                 await generator.generate()
+            except IntegrityError:
+                logger.info(
+                    "Order already exists (db constraint), skipping duplicate bid won",
+                    extra={"lot_id": lot_id, "auction": auction, "user_uuid": user_uuid},
+                )
             except Exception as exc:
                 logger.exception(
                     "Error processing bid won",
@@ -78,7 +92,6 @@ class OrderRabbitConsumer(RabbitBaseService):
                         "user_uuid": user_uuid,
                     },
                 )
-
 
 
 
