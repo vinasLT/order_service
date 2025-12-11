@@ -39,7 +39,6 @@ class Order(IdMixin, TimestampMixin, Base):
     tracking_link: Mapped[str] = mapped_column(nullable=True, default=None)
 
     auto_generated: Mapped[bool] = mapped_column(nullable=False, default=False)
-    fee_type: Mapped[str] = mapped_column(nullable=False)
     delivery_status: Mapped[OrderStatusEnum] = mapped_column(
         Enum(OrderStatusEnum), nullable=False, default=OrderStatusEnum.WON
     )
