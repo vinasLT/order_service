@@ -96,7 +96,8 @@ class CalculatorRpcClient(BaseRpcClient[calculator_pb2_grpc.CalculatorServiceStu
 
 class DetailedInfoService(BaseRpcClient[calculator_pb2_grpc.DetailedInfoServiceStub]):
     def __init__(self, server_url: str | None = None):
-        super().__init__(server_url=server_url or settings.RPC_API_URL)
+        # Detailed info endpoints are part of the calculator service
+        super().__init__(server_url=server_url or settings.RPC_CALCULATOR_URL)
 
     async def __aenter__(self):
         await self.connect()
