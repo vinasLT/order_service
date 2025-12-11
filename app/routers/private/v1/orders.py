@@ -48,44 +48,68 @@ async def create_order(data: OrderIn = Body(...), db: AsyncSession = Depends(get
                 raise NotFoundProblem(e.details())
             raise BadRequestProblem(e.details())
 
+    try:
+        async with DetailedInfoService() as detailed_info_service:
+            location_data = await detailed_info_service.get_detailed_location(location_id=data.location_id)
+            fee_type_data = await detailed_info_service.get_detailed_fee_type(fee_type_id=data.fee_type_id)
+            destination_data = await detailed_info_service.get_detailed_destination(destination_id=data.destination_id)
+    except grpc.aio.AioRpcError as e:
+        if e.code() == grpc.StatusCode.NOT_FOUND:
+            raise NotFoundProblem(e.details())
+        raise BadRequestProblem(e.details())
+
     async with CalculatorRpcClient() as calculator_client:
         try:
-            calculator_data = await calculator_client.get_calculator_with_ids(
+            calculator_data = await calculator_client.get_calculator_with_data(
                 price=data.vehicle_value,
                 auction=data.auction,
                 vehicle_type=data.vehicle_type,
-                fee_type_id=data.fee_type_id,
-                location_id=data.location_id,
-
+                location=location_data.name,
+                fee_type=fee_type_data.fee_type,
+                destination=destination_data.name,
             )
         except grpc.aio.AioRpcError as e:
             if e.code() == grpc.StatusCode.NOT_FOUND:
                 raise NotFoundProblem(e.details())
             raise BadRequestProblem(e.details())
 
-    try:
-        async with DetailedInfoService() as detailed_info_service:
-            destination_data = await detailed_info_service.get_detailed_destination(destination_id=data.destination_id)
-    except grpc.aio.AioRpcError as e:
-        if e.code() == grpc.StatusCode.NOT_FOUND:
-            raise NotFoundProblem("Destination not found")
-        raise BadRequestProblem(e.details())
+    detailed_data = calculator_data.detailed_data
+    if not detailed_data:
+        raise BadRequestProblem("Calculator response missing detailed data")
+
+    terminal_name = next(
+        (terminal.terminal_name for terminal in detailed_data.terminals if terminal.terminal_id == data.terminal_id),
+        None,
+    )
+    if not terminal_name:
+        raise NotFoundProblem("Terminal not found")
+
+    destination_name = next(
+        (
+            destination.destination_name
+            for destination in detailed_data.available_destinations
+            if destination.destination_id == data.destination_id
+        ),
+        destination_data.name,
+    )
 
 
     try:
         order = await order_service.create(
             OrderCreate(
                 **data.model_dump(),
-                location_name=calculator_data.location.name,
-                location_city=calculator_data.location.city,
-                location_state=calculator_data.location.state,
-                location_postal_code=calculator_data.location.postal_code,
-                destination_name=destination_data.name,
-                terminal_name=calculator_data.terminal_name,
-                fee_type_name=calculator_data.fee_type.fee_type
+                location_name=location_data.name,
+                location_city=location_data.city,
+                location_state=location_data.state,
+                location_postal_code=location_data.postal_code,
+                destination_name=destination_name,
+                terminal_name=terminal_name,
+                fee_type_name=fee_type_data.fee_type
             ), flush=True
         )
-        default_calculator = calculator_data.calculator.calculator
+        default_calculator = calculator_data.data.calculator
+        if not default_calculator:
+            raise BadRequestProblem("Calculator response missing calculator data")
         items = [
             InvoiceItemCreate(
                 name=f'{data.vehicle_name} ({data.vin})',
@@ -158,28 +182,55 @@ async def update_order(
     calculator_data = None
     terminal_name = None
     if should_refresh_calculator_fields:
+        location_id = update_data.get("location_id", order.location_id)
+        fee_type_id = update_data.get("fee_type_id", order.fee_type_id)
+        try:
+            async with DetailedInfoService() as detailed_info_service:
+                location_data = await detailed_info_service.get_detailed_location(location_id=location_id)
+                fee_type_data = await detailed_info_service.get_detailed_fee_type(fee_type_id=fee_type_id)
+        except grpc.aio.AioRpcError as e:
+            if e.code() == grpc.StatusCode.NOT_FOUND:
+                raise NotFoundProblem(e.details())
+            raise BadRequestProblem(e.details())
+
         async with CalculatorRpcClient() as calculator_client:
             try:
-                calculator_data = await calculator_client.get_calculator_with_ids(
+                calculator_data = await calculator_client.get_calculator_with_data(
                     price=update_data.get("vehicle_value", order.vehicle_value),
                     auction=update_data.get("auction", order.auction),
                     vehicle_type=update_data.get("vehicle_type", order.vehicle_type),
-                    fee_type_id=update_data.get("fee_type_id", order.fee_type_id),
-                    location_id=update_data.get("location_id", order.location_id),
+                    fee_type=fee_type_data.fee_type,
+                    location=location_data.name,
                 )
             except grpc.aio.AioRpcError as e:
                 if e.code() == grpc.StatusCode.NOT_FOUND:
                     raise NotFoundProblem(e.details())
                 raise BadRequestProblem(e.details())
 
-        update_data.update(
-            location_name=calculator_data.location.name,
-            location_city=calculator_data.location.city,
-            location_state=calculator_data.location.state,
-            location_postal_code=calculator_data.location.postal_code,
-            terminal_name=calculator_data.terminal_name,
-            fee_type_name=calculator_data.fee_type.fee_type,
+        detailed_data = calculator_data.detailed_data
+        if not detailed_data:
+            raise BadRequestProblem("Calculator response missing detailed data")
+        target_terminal_id = update_data.get("terminal_id", order.terminal_id)
+        terminal_name_from_calc = next(
+            (
+                terminal.terminal_name
+                for terminal in detailed_data.terminals
+                if terminal.terminal_id == target_terminal_id
+            ),
+            None,
         )
+        if target_terminal_id and not terminal_name_from_calc:
+            raise NotFoundProblem("Terminal not found for the selected location")
+
+        update_data.update(
+            location_name=location_data.name,
+            location_city=location_data.city,
+            location_state=location_data.state,
+            location_postal_code=location_data.postal_code,
+            fee_type_name=fee_type_data.fee_type,
+        )
+        if terminal_name_from_calc:
+            update_data["terminal_name"] = terminal_name_from_calc
 
     if "destination_id" in update_data:
         try:
