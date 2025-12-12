@@ -15,7 +15,7 @@ from app.database.crud import OrderService
 from app.database.db.session import get_async_db
 from app.database.schemas import OrderCreate, OrderRead, InvoiceItemCreate, OrderUpdate
 from app.routers.private.v1 import choose_destination, custom_invoice, invoice_items, invoice, status
-from app.rpc_client.auth import AuthRpcClient
+from app.services.user_info import fetch_user_identity
 from app.rpc_client.calculator import CalculatorRpcClient, DetailedInfoService
 from app.schemas.order import OrderIn
 
@@ -41,21 +41,20 @@ async def create_order(data: OrderIn = Body(...), db: AsyncSession = Depends(get
     if await order_service.exists_by_vin(data.vin):
         raise BadRequestProblem("Order with this VIN already exists")
 
-    async with AuthRpcClient() as auth_client:
-        try:
-            await auth_client.get_user(user_uuid=data.user_uuid)
-        except grpc.aio.AioRpcError as e:
-            logger.error(
-                "Auth service failed while validating user for order creation",
-                extra={
-                    "user_uuid": data.user_uuid,
-                    "status_code": e.code().name if e.code() else None,
-                    "details": e.details(),
-                },
-            )
-            if e.code() == grpc.StatusCode.NOT_FOUND:
-                raise NotFoundProblem(e.details())
-            raise BadRequestProblem(e.details())
+    try:
+        user_identity = await fetch_user_identity(data.user_uuid)
+    except grpc.aio.AioRpcError as e:
+        logger.error(
+            "Auth service failed while validating user for order creation",
+            extra={
+                "user_uuid": data.user_uuid,
+                "status_code": e.code().name if e.code() else None,
+                "details": e.details(),
+            },
+        )
+        if e.code() == grpc.StatusCode.NOT_FOUND:
+            raise NotFoundProblem(e.details())
+        raise BadRequestProblem(e.details())
 
     try:
         async with DetailedInfoService() as detailed_info_service:
@@ -126,14 +125,16 @@ async def create_order(data: OrderIn = Body(...), db: AsyncSession = Depends(get
     try:
         order = await order_service.create(
             OrderCreate(
-                **data.model_dump(),
+                **data.model_dump(exclude={"user_name", "user_email"}),
                 location_name=location_data.name,
                 location_city=location_data.city,
                 location_state=location_data.state,
                 location_postal_code=location_data.postal_code,
                 destination_name=destination_name,
                 terminal_name=terminal_name,
-                fee_type_name=fee_type_data.fee_type
+                fee_type_name=fee_type_data.fee_type,
+                user_name=user_identity["user_name"],
+                user_email=user_identity["user_email"]
             ), flush=True
         )
         default_calculator = calculator_data.data.calculator
@@ -199,7 +200,7 @@ async def update_order(
 ):
     order_service = OrderService(db)
     order = await order_service.get_with_not_found_exception(order_id, "Order")
-    update_data = data.model_dump(exclude_unset=True)
+    update_data = data.model_dump(exclude_unset=True, exclude={"user_name", "user_email"})
 
     if "lot_id" in update_data and update_data["lot_id"] != order.lot_id:
         if await order_service.exists_by_lot_id(update_data["lot_id"]):
@@ -208,6 +209,27 @@ async def update_order(
     if "vin" in update_data and update_data["vin"] != order.vin:
         if await order_service.exists_by_vin(update_data["vin"]):
             raise BadRequestProblem("Order with this VIN already exists")
+
+    if "user_uuid" in update_data and update_data["user_uuid"] != order.user_uuid:
+        try:
+            user_identity = await fetch_user_identity(update_data["user_uuid"])
+            update_data.update(
+                user_name=user_identity["user_name"],
+                user_email=user_identity["user_email"],
+            )
+        except grpc.aio.AioRpcError as e:
+            logger.error(
+                "Auth service failed while updating user for order",
+                extra={
+                    "order_id": order_id,
+                    "user_uuid": update_data["user_uuid"],
+                    "status_code": e.code().name if e.code() else None,
+                    "details": e.details(),
+                },
+            )
+            if e.code() == grpc.StatusCode.NOT_FOUND:
+                raise NotFoundProblem(e.details())
+            raise BadRequestProblem(e.details())
 
     should_refresh_calculator_fields = any(
         field in update_data for field in ("location_id", "fee_type_id", "vehicle_value", "auction", "vehicle_type")

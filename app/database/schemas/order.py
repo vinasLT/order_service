@@ -31,6 +31,8 @@ class OrderBase(BaseModel):
     terminal_id: int = Field(..., description="Terminal ID")
     fee_type_id: int = Field(..., description="Fee type ID")
     user_uuid: str = Field(..., description="UUID of the user who own the order")
+    user_name: str | None = Field(default=None, description="Cached user full name")
+    user_email: str | None = Field(default=None, description="Cached user email")
 
 
 class OrderCreate(OrderBase):
@@ -75,6 +77,8 @@ class OrderUpdate(BaseModel):
     fee_type_id: int | None = None
     fee_type_name: str | None = None
     user_uuid: str | None = None
+    user_name: str | None = None
+    user_email: str | None = None
 
 
 class OrderRead(OrderBase):
@@ -90,5 +94,7 @@ class OrderRead(OrderBase):
     terminal_name: str
     fee_type_name: str
     tracking_link: str | None = None
+    user_name: str
+    user_email: str
 
     model_config = ConfigDict(from_attributes=True)

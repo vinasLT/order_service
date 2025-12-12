@@ -1,4 +1,5 @@
 import asyncio
+import grpc.aio
 from datetime import datetime, timezone
 
 from app.core.utils import get_cheapest_terminal_prices
@@ -7,6 +8,7 @@ from app.database.db.session import get_db_context
 from app.database.models import Order
 from app.database.schemas import InvoiceItemCreate, OrderCreate
 from app.enums.auction import AuctionEnum
+from app.services.user_info import fetch_user_identity
 from app.rpc_client.auction_api import ApiRpcClient
 from app.rpc_client.calculator import CalculatorRpcClient
 from app.rpc_client.gen.python.auction.v1.lot_pb2 import Lot
@@ -96,6 +98,11 @@ class GenerateFromLot:
             if matching_terminal:
                 terminal_id_for_order = matching_terminal.terminal_id
 
+            try:
+                user_identity = await fetch_user_identity(self.user_uuid)
+            except grpc.aio.AioRpcError as e:
+                raise ValueError(f"Failed to fetch user data for order creation: {e.details()}") from e
+
 
             order = await order_service.create(
                 OrderCreate(
@@ -123,6 +130,8 @@ class GenerateFromLot:
                     destination_name=destination.destination_name,
                     terminal_name=terminal_name_for_order,
                     fee_type_name=fee_type_data.fee_type if fee_type_data and fee_type_data.fee_type else "",
+                    user_name=user_identity["user_name"],
+                    user_email=user_identity["user_email"],
                 ),
                 flush=True,
             )

@@ -64,6 +64,9 @@ class Order(IdMixin, TimestampMixin, Base):
 
     user_uuid: Mapped[str] = mapped_column(nullable=False)
 
+    user_name: Mapped[str] = mapped_column(nullable=False)
+    user_email: Mapped[str] = mapped_column(nullable=False)
+
     # -- relationships --
     invoice_items: Mapped[list["InvoiceItems"]] = relationship(
         "InvoiceItems", back_populates="order", cascade="all, delete-orphan", lazy="selectin"
