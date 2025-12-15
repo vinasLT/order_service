@@ -127,9 +127,6 @@ async def get_custom_invoice(
         if order.delivery_status != OrderStatusEnum.CUSTOM_INVOICE_ADDED:
             raise BadRequestProblem(detail="Custom invoice is not available yet")
 
-    if custom_invoice.status == CustomInvoiceStatus.PENDING:
-        raise BadRequestProblem(detail="Custom invoice is not uploaded yet")
-
     try:
         async with FilesRpcClient() as client:
             download = await client.get_download_url(file_id=custom_invoice.file_id)
