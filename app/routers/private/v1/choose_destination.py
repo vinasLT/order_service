@@ -49,6 +49,8 @@ async def choose_destination(
     destination_name = destinations_mapped[destination_id]
 
     previous_status = order.delivery_status
+    previous_destination_id = order.destination_id
+
     updated_order = await order_service.update(
         order_id,
         OrderUpdate(
@@ -57,21 +59,24 @@ async def choose_destination(
             delivery_status=OrderStatusEnum.PORT_CHOSEN
         )
     )
-    invoice_items = GenerateFromLot.build_invoice_items_from_order_data(
-        order=order,
-        default_calculator=calculator.data.calculator,
-    )
 
-    await order_service.create_invoice_items_batch(order_id, invoice_items)
+    if not previous_destination_id:
 
-    await send_status_change_notifications(
-        updated_order,
-        previous_status,
-        user_uuid=user.uuid,
-        is_telegram=True,
-    )
+        invoice_items = GenerateFromLot.build_invoice_items_from_order_data(
+            order=order,
+            default_calculator=calculator.data.calculator,
+        )
 
-    return order
+        await order_service.create_invoice_items_batch(order_id, invoice_items)
+
+        await send_status_change_notifications(
+            updated_order,
+            previous_status,
+            user_uuid=user.uuid,
+            is_telegram=True,
+        )
+
+    return updated_order
 
 
 
