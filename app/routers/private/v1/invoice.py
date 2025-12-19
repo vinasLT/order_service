@@ -51,7 +51,15 @@ async def get_invoice(
     if order.delivery_status == OrderStatusEnum.PORT_CHOSEN and not has_all_orders_permission:
         raise BadRequestProblem(detail=f"You need wait until status of order will be: {OrderStatusEnum.INVOICE_ADDED.value}")
 
-    generator = InvoiceGenerator(order)
+    auth_user = None
+    try:
+        async with AuthRpcClient() as auth_client:
+            auth_user = await auth_client.get_user(user_uuid=order.user_uuid)
+    except grpc.aio.AioRpcError:
+        # Ignore RPC failures to avoid blocking invoice generation
+        pass
+
+    generator = InvoiceGenerator(order, user=auth_user)
     pdf_bytes = generator.generate_invoice_based_on_invoice_type()
 
     filename = f"invoice_{order.vin}.pdf"
