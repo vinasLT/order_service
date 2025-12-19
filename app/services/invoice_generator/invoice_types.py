@@ -19,22 +19,26 @@ class InvoiceTypes:
         script_dir = Path(__file__).resolve().parent
         logo_path = script_dir / "images" / "vinaslt_logo.png"
         delivery_terms = (
-            "Some delivery terms here"
+            ""
         )
 
         return BaseInvoice(
-            company_name="VINAS",
+            company_name='VINAS',
             logo_path=str(logo_path),
-            header_subtitle="Additional info",
+            header_subtitle=None,
             company_info_lines=[
-                "Some info about company",
+                'UAB "HVJ LOGISTIC"',
+                "Įm. kodas 306661666",
+                "PVM mokėtojo kodas LT100016791816",
+                "V. Nagevičiaus g. 3, Vilnius, Lietuva",
+                "SEB — LT88704409010848345",
             ],
             payment_details_usd=[
-                "Bank details in usd",
+                # No USD account provided
             ],
             payment_details_eur=[
-                "bank details in eur",
+                "Bank: SEB",
+                "IBAN: LT88704409010848345",
             ],
             delivery_terms=delivery_terms,
         )
-
