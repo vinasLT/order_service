@@ -1,7 +1,7 @@
 import grpc.aio
 from AuthTools import HeaderUser
 from AuthTools.Permissions.dependencies import require_permissions
-from fastapi import APIRouter, Depends, Body
+from fastapi import APIRouter, Depends, Body, Query
 from pydantic import BaseModel
 from rfc9457 import NotFoundProblem, BadRequestProblem
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -383,6 +383,22 @@ async def get_user_orders(
 ):
     order_service = OrderService(db)
     stmt = await order_service.get_all_with_search(data.search, user_uuid=user.uuid)
+    return await paginate(db, stmt)
+
+
+@order_router.get(
+    "/for-user",
+    response_model=OrdersPage,
+    description=f"Get orders for user, required permissions: {Permissions.ORDER_ALL_READ.value}",
+    dependencies=[Depends(require_permissions(Permissions.ORDER_ALL_READ))],
+)
+async def get_orders_for_user(
+    user_uuid: str = Query(...),
+    data: OrderSearch = Depends(),
+    db: AsyncSession = Depends(get_async_db),
+):
+    order_service = OrderService(db)
+    stmt = await order_service.get_all_with_search(data.search, user_uuid=user_uuid)
     return await paginate(db, stmt)
 
 
