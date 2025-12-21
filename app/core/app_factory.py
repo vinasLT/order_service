@@ -1,3 +1,4 @@
+import asyncio
 from contextlib import asynccontextmanager
 from typing import Optional, Callable
 
@@ -29,7 +30,25 @@ def create_app(
 ) -> FastAPI:
     @asynccontextmanager
     async def default_lifespan(_: FastAPI):
-        connection = await connect_robust(settings.RABBITMQ_URL)
+        max_attempts = 5
+        base_delay_s = 2
+        connection = None
+        for attempt in range(1, max_attempts + 1):
+            try:
+                connection = await connect_robust(settings.RABBITMQ_URL)
+                break
+            except Exception:
+                if attempt >= max_attempts:
+                    raise
+                delay = base_delay_s * attempt
+                logger.warning(
+                    "RabbitMQ connection failed, retrying",
+                    extra={"attempt": attempt, "delay_s": delay},
+                )
+                await asyncio.sleep(delay)
+
+        if connection is None:
+            raise RuntimeError("RabbitMQ connection not established after retries")
         consumer = OrderRabbitConsumer(
             AsyncSessionLocal,
             connection,
