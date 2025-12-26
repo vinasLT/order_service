@@ -110,6 +110,10 @@ async def get_invoice(
     db: AsyncSession = Depends(get_async_db),
     user: HeaderUser = Depends(require_one_of_permissions(Permissions.ORDER_OWN_READ, Permissions.ORDER_ALL_READ)),
 ):
+    logger.info(
+        "Invoice request received",
+        extra={"order_id": order_id, "user_uuid": user.uuid},
+    )
     order_service = OrderService(db)
     order = await order_service.get(order_id)
     if not order:
@@ -131,6 +135,11 @@ async def get_invoice(
 
     if order.delivery_status == OrderStatusEnum.PORT_CHOSEN and not has_all_orders_permission:
         raise BadRequestProblem(detail=f"You need wait until status of order will be: {OrderStatusEnum.INVOICE_ADDED.value}")
+
+    logger.info(
+        "Invoice request passed access/status checks",
+        extra={"order_id": order.id, "delivery_status": order.delivery_status},
+    )
 
     auth_user = None
     try:
