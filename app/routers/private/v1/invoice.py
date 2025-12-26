@@ -25,7 +25,7 @@ invoice_router = APIRouter(prefix="/{order_id}/invoice", tags=["Invoice"])
 async def _get_usd_to_eur_rate(order: Order) -> float | None:
     try:
         async with DetailedInfoService() as calculator_client:
-            rate = await calculator_client.getrate()
+            rate = await calculator_client.get_rate()
     except grpc.aio.AioRpcError:
         logger.warning(
             "Calculator RPC failed while fetching USD/EUR rate",
