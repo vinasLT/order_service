@@ -11,12 +11,77 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import Permissions
 from app.database.crud import OrderService
 from app.database.db.session import get_async_db
+from app.database.models import Order
 from app.enums.order import OrderStatusEnum
 from app.rpc_client.auth import AuthRpcClient
+from app.rpc_client.calculator import CalculatorRpcClient
+from app.rpc_client.gen.python.calculator.v1 import calculator_pb2
 from app.services.invoice_generator.generator import InvoiceGenerator
 
 
 invoice_router = APIRouter(prefix="/{order_id}/invoice", tags=["Invoice"])
+
+
+def _safe_rate(numerator: int, denominator: int) -> float | None:
+    if not numerator or not denominator:
+        return None
+    return numerator / denominator
+
+
+def _rate_from_city_lists(
+    eur_cities: list[calculator_pb2.City],
+    usd_cities: list[calculator_pb2.City],
+) -> float | None:
+    usd_by_name = {city.name: city.price for city in usd_cities if city.name and city.price}
+    for city in eur_cities:
+        usd_price = usd_by_name.get(city.name)
+        if usd_price:
+            return city.price / usd_price
+    return None
+
+
+def _extract_usd_to_eur_rate(
+    calculator: calculator_pb2.GetCalculatorWithDataResponse,
+) -> float | None:
+    data = calculator.data
+    if not data or not data.calculator or not data.eu_calculator:
+        return None
+
+    eur_calc = data.eu_calculator
+    usd_calc = data.calculator
+
+    rate = _safe_rate(eur_calc.broker_fee, usd_calc.broker_fee)
+    if rate:
+        return rate
+
+    rate = _safe_rate(getattr(eur_calc.additional, "summ", 0), getattr(usd_calc.additional, "summ", 0))
+    if rate:
+        return rate
+
+    for eur_list, usd_list in (
+        (eur_calc.totals, usd_calc.totals),
+        (eur_calc.transportation_price, usd_calc.transportation_price),
+        (eur_calc.ocean_ship, usd_calc.ocean_ship),
+    ):
+        rate = _rate_from_city_lists(list(eur_list), list(usd_list))
+        if rate:
+            return rate
+
+    return None
+
+
+async def _get_usd_to_eur_rate(order: Order) -> float | None:
+    try:
+        async with CalculatorRpcClient() as calculator_client:
+            calculator = await calculator_client.get_calculator_with_data(
+                price=order.vehicle_value,
+                auction=order.auction,
+                vehicle_type=order.vehicle_type,
+                location=order.location_name,
+            )
+    except grpc.aio.AioRpcError:
+        return None
+    return _extract_usd_to_eur_rate(calculator)
 
 
 @invoice_router.get(
@@ -59,7 +124,8 @@ async def get_invoice(
         # Ignore RPC failures to avoid blocking invoice generation
         pass
 
-    generator = InvoiceGenerator(order, user=auth_user)
+    usd_to_eur_rate = await _get_usd_to_eur_rate(order)
+    generator = InvoiceGenerator(order, user=auth_user, usd_to_eur_rate=usd_to_eur_rate)
     pdf_bytes = generator.generate_invoice_based_on_invoice_type()
 
     filename = f"invoice_{order.vin}.pdf"

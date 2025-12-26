@@ -17,9 +17,10 @@ from app.services.invoice_generator.invoice_types import InvoiceTypes, BaseInvoi
 
 
 class InvoiceGenerator:
-    def __init__(self, order: Order, user=None):
+    def __init__(self, order: Order, user=None, usd_to_eur_rate: float | None = None):
         self.order = order
         self.user = user
+        self.usd_to_eur_rate = usd_to_eur_rate
 
     def _load_user_via_rpc(self):
 
@@ -384,6 +385,16 @@ class InvoiceGenerator:
                 Paragraph(f"${total_amount:.2f}", bold_style),
             ]
         )
+        if self.usd_to_eur_rate:
+            total_amount_eur = total_amount * self.usd_to_eur_rate
+            items_table_data.append(
+                [
+                    "",
+                    "",
+                    Paragraph("<b>Total (EUR):</b>", bold_style),
+                    Paragraph(f"€{total_amount_eur:.2f}", bold_style),
+                ]
+            )
 
         items_table = Table(items_table_data, colWidths=[240, 60, 100, 100])
         items_table.setStyle(
