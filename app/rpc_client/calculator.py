@@ -137,3 +137,8 @@ class DetailedInfoService(BaseRpcClient[calculator_pb2_grpc.DetailedInfoServiceS
     ) -> calculator_pb2.GetDetailedFeeTypeResponse:
         request = calculator_pb2.GetDetailedFeeTypeRequest(id=fee_type_id)
         return await self._execute_request(self.stub.GetDetailedFeeType, request)
+
+    async def get_rate(self) -> float:
+        request = calculator_pb2.GetRatesRequest()
+        response = await self._execute_request(self.stub.GetRates, request)
+        return float(response.rate)
