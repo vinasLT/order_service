@@ -9,6 +9,7 @@ from rfc9457 import ForbiddenProblem, NotFoundProblem, BadRequestProblem
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.config import Permissions
+from app.core.logger import logger
 from app.database.crud import OrderService
 from app.database.db.session import get_async_db
 from app.database.models import Order
@@ -80,8 +81,23 @@ async def _get_usd_to_eur_rate(order: Order) -> float | None:
                 location=order.location_name,
             )
     except grpc.aio.AioRpcError:
+        logger.warning(
+            "Calculator RPC failed while fetching USD/EUR rate",
+            extra={"order_id": order.id},
+        )
         return None
-    return _extract_usd_to_eur_rate(calculator)
+    rate = _extract_usd_to_eur_rate(calculator)
+    if rate:
+        logger.info(
+            "USD/EUR rate resolved for invoice",
+            extra={"order_id": order.id, "usd_to_eur_rate": rate},
+        )
+    else:
+        logger.warning(
+            "USD/EUR rate not available for invoice",
+            extra={"order_id": order.id},
+        )
+    return rate
 
 
 @invoice_router.get(
