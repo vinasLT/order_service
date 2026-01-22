@@ -31,14 +31,14 @@ class InvoiceTypes:
                 "Įm. kodas 306661666",
                 "PVM mokėtojo kodas LT100016791816",
                 "V. Nagevičiaus g. 3, Vilnius, Lietuva",
-                "SEB — LT88704409010848345",
+                "SEB — LT887044090108483458",
             ],
             payment_details_usd=[
                 # No USD account provided
             ],
             payment_details_eur=[
                 "Bank: SEB",
-                "IBAN: LT88704409010848345",
+                "IBAN: LT887044090108483458",
             ],
             delivery_terms=delivery_terms,
         )
