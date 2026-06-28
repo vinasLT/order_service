@@ -14,7 +14,7 @@ from app.core.utils import get_cheapest_terminal_prices, create_pagination_page
 from app.database.crud import OrderService
 from app.database.db.session import get_async_db
 from app.database.schemas import OrderCreate, OrderRead, InvoiceItemCreate, OrderUpdate
-from app.routers.private.v1 import choose_destination, custom_invoice, invoice_items, invoice, status
+from app.routers.private.v1 import choose_destination, custom_invoice, auction_invoice, invoice_items, invoice, status
 from app.services.user_info import fetch_user_identity
 from app.rpc_client.calculator import CalculatorRpcClient, DetailedInfoService
 from app.schemas.order import OrderIn
@@ -23,6 +23,7 @@ from app.schemas.order import OrderIn
 order_router = APIRouter(prefix="/order")
 order_router.include_router(choose_destination.choose_destination_router)
 order_router.include_router(custom_invoice.custom_invoice_router)
+order_router.include_router(auction_invoice.auction_invoice_router)
 order_router.include_router(invoice_items.invoice_items_router)
 order_router.include_router(invoice.invoice_router)
 order_router.include_router(status.status_router)

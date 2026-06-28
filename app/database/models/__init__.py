@@ -1,6 +1,7 @@
 from .base import Base
 from .mixins import IdMixin, TimestampMixin
 from .order import (
+    AuctionInvoice,
     CustomInvoice,
     InvoiceItems,
     Order,
@@ -8,6 +9,7 @@ from .order import (
 )
 
 __all__ = [
+    "AuctionInvoice",
     "Base",
     "CustomInvoice",
     "IdMixin",

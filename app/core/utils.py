@@ -5,10 +5,26 @@ from fastapi_pagination import Page
 from fastapi_pagination.customization import CustomizedPage, UseParamsFields, UseFieldsAliases
 from pydantic import BaseModel
 
+from app.enums.order import OrderStatusEnum
 from app.rpc_client.gen.python.calculator.v1 import calculator_pb2
 from app.rpc_client.gen.python.calculator.v1.calculator_pb2 import City
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
+
+_LEGACY_GENERATED_INVOICE_STATUSES = (
+    OrderStatusEnum.INVOICE_ADDED,
+    OrderStatusEnum.TRACKING_ADDED,
+    OrderStatusEnum.VEHICLE_IN_CUSTOM_AGENCY,
+    OrderStatusEnum.CUSTOM_INVOICE_ADDED,
+    OrderStatusEnum.DELIVERED,
+)
+
+
+def uses_legacy_generated_invoice(
+    delivery_status: OrderStatusEnum,
+    has_auction_invoice: bool,
+) -> bool:
+    return not has_auction_invoice and delivery_status in _LEGACY_GENERATED_INVOICE_STATUSES
 
 
 

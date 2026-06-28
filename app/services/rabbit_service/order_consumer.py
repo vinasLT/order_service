@@ -5,10 +5,10 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, AsyncSession
 from sqlalchemy.exc import IntegrityError
 
 from app.core.logger import logger
-from app.database.crud import CustomInvoiceService, OrderService
-from app.database.schemas import CustomInvoiceUpdate
+from app.database.crud import AuctionInvoiceService, CustomInvoiceService, OrderService
+from app.database.schemas import AuctionInvoiceUpdate, CustomInvoiceUpdate
 from app.enums.auction import AuctionEnum
-from app.enums.custom_invoice_status import CustomInvoiceStatus
+from app.enums.custom_invoice_status import FileInvoiceStatus
 from app.services.create_order_from_lot import GenerateFromLot
 from app.services.rabbit_service.base import RabbitBaseService
 from app.services.rabbit_service.file_routing_keys import RoutingKeys
@@ -33,18 +33,44 @@ class OrderRabbitConsumer(RabbitBaseService):
             async with self.db_session_factory() as session:
                 logger.info("Processing message", extra={"routing_key": routing_key})
 
+                file_id = payload.get("id")
+                status = payload.get("status", "").upper()
+
                 custom_invoice_service = CustomInvoiceService(session)
-                custom_invoice = await custom_invoice_service.get_by_file_id(payload.get("id"))
+                custom_invoice = await custom_invoice_service.get_by_file_id(file_id)
                 if custom_invoice:
-                    status = payload.get("status", "").upper()
                     if status == "AVAILABLE":
                         logger.info("Invoice is available", extra={"invoice_id": custom_invoice.id})
-                        await custom_invoice_service.update(custom_invoice.id,  CustomInvoiceUpdate(status=CustomInvoiceStatus.AVAILABLE))
+                        await custom_invoice_service.update(
+                            custom_invoice.id,
+                            CustomInvoiceUpdate(status=FileInvoiceStatus.AVAILABLE),
+                        )
                     elif status == "FAILED":
                         logger.info("Invoice is failed", extra={"invoice_id": custom_invoice.id})
                         await custom_invoice_service.delete(custom_invoice.id)
                     else:
                         logger.warning("Unprocessable status received", extra={"status": status})
+                else:
+                    auction_invoice_service = AuctionInvoiceService(session)
+                    auction_invoice = await auction_invoice_service.get_by_file_id(file_id)
+                    if auction_invoice:
+                        if status == "AVAILABLE":
+                            logger.info(
+                                "Auction invoice is available",
+                                extra={"invoice_id": auction_invoice.id},
+                            )
+                            await auction_invoice_service.update(
+                                auction_invoice.id,
+                                AuctionInvoiceUpdate(status=FileInvoiceStatus.AVAILABLE),
+                            )
+                        elif status == "FAILED":
+                            logger.info(
+                                "Auction invoice upload failed",
+                                extra={"invoice_id": auction_invoice.id},
+                            )
+                            await auction_invoice_service.delete(auction_invoice.id)
+                        else:
+                            logger.warning("Unprocessable status received", extra={"status": status})
         elif routing_key == RoutingKeys.BID_WON:
             logger.info("Bid won received")
             user_uuid = payload.get("user_uuid")

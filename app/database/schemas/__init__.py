@@ -1,3 +1,4 @@
+from .auction_invoice import AuctionInvoiceCreate, AuctionInvoiceRead, AuctionInvoiceUpdate
 from .custom_invoice import CustomInvoiceCreate, CustomInvoiceRead, CustomInvoiceUpdate
 from .invoice_items import InvoiceItemCreate, InvoiceItemRead, InvoiceItemUpdate
 from .order import OrderCreate, OrderRead, OrderUpdate

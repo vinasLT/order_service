@@ -1,25 +1,30 @@
+from datetime import datetime
+
 from pydantic import BaseModel, ConfigDict, Field
 
 from app.enums.custom_invoice_status import FileInvoiceStatus
-from datetime import datetime
 
-class CustomInvoiceBase(BaseModel):
+
+class AuctionInvoiceBase(BaseModel):
     file_id: int = Field(..., description="File ID for the uploaded invoice")
     order_id: int = Field(..., description="Order ID this invoice belongs to")
-    status: FileInvoiceStatus = Field(FileInvoiceStatus.PENDING, description="Custom invoice status")
+    status: FileInvoiceStatus = Field(
+        FileInvoiceStatus.PENDING,
+        description="Auction invoice status",
+    )
 
 
-class CustomInvoiceCreate(CustomInvoiceBase):
+class AuctionInvoiceCreate(AuctionInvoiceBase):
     pass
 
 
-class CustomInvoiceUpdate(BaseModel):
+class AuctionInvoiceUpdate(BaseModel):
     file_id: int | None = None
     order_id: int | None = None
     status: FileInvoiceStatus | None = None
 
 
-class CustomInvoiceRead(CustomInvoiceBase):
+class AuctionInvoiceRead(AuctionInvoiceBase):
     id: int
     created_at: datetime
     updated_at: datetime

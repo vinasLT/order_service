@@ -11,7 +11,7 @@ from ..mixins import IdMixin, TimestampMixin
 
 
 if TYPE_CHECKING:
-    from app.database.models import CustomInvoice, InvoiceItems, OrderStatusHistory
+    from app.database.models import AuctionInvoice, CustomInvoice, InvoiceItems, OrderStatusHistory
 
 
 class Order(IdMixin, TimestampMixin, Base):
@@ -78,4 +78,8 @@ class Order(IdMixin, TimestampMixin, Base):
 
     custom_invoice: Mapped[Optional["CustomInvoice"]] = relationship(
         "CustomInvoice", back_populates="order", cascade="all, delete-orphan", uselist=False, lazy="selectin"
+    )
+
+    auction_invoice: Mapped[Optional["AuctionInvoice"]] = relationship(
+        "AuctionInvoice", back_populates="order", cascade="all, delete-orphan", uselist=False, lazy="selectin"
     )

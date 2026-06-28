@@ -10,7 +10,7 @@ from app.config import Permissions
 from app.database.crud import CustomInvoiceService, OrderService
 from app.database.db.session import get_async_db
 from app.database.schemas import CustomInvoiceCreate, CustomInvoiceRead, CustomInvoiceUpdate
-from app.enums.custom_invoice_status import CustomInvoiceStatus
+from app.enums.custom_invoice_status import FileInvoiceStatus
 from app.enums.order import OrderStatusEnum
 from app.routers.private.v1.status.get_order_mixin import get_order_with_check
 from app.rpc_client.files import FilesRpcClient
@@ -77,7 +77,7 @@ async def get_custom_invoice_presigned_url(
             CustomInvoiceUpdate(
                 file_id=presigned.file_id,
                 order_id=order_id,
-                status=CustomInvoiceStatus.PENDING,
+                status=FileInvoiceStatus.PENDING,
             ),
         )
     else:
@@ -85,7 +85,7 @@ async def get_custom_invoice_presigned_url(
             CustomInvoiceCreate(
                 file_id=presigned.file_id,
                 order_id=order_id,
-                status=CustomInvoiceStatus.PENDING,
+                status=FileInvoiceStatus.PENDING,
             )
         )
 
