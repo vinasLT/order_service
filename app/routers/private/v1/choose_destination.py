@@ -16,7 +16,8 @@ choose_destination_router = APIRouter()
 
 @choose_destination_router.post("/{order_id}/choose-destination",
                             description="Status 1, user must choose terminal to continue\n"
-                                        f"required permissions: {Permissions.ORDER_OWN_WRITE.value}",
+                                        f"required permissions for user: {Permissions.ORDER_OWN_WRITE.value}\n"
+                                        f"required permissions for admin: {Permissions.ORDER_ALL_WRITE.value}",
                             response_model=OrderRead)
 async def choose_destination(
         order_id: int,
@@ -30,8 +31,8 @@ async def choose_destination(
     if order.delivery_status not in [OrderStatusEnum.WON, OrderStatusEnum.PORT_CHOSEN]:
         raise BadRequestProblem(detail="You cannot change destination after invoice added")
 
-
-    if order.user_uuid != user.uuid:
+    
+    if order.user_uuid != user.uuid and Permissions.ORDER_ALL_WRITE.value not in user.permissions:
         raise ForbiddenProblem(detail="Not allowed")
 
     calculator = await GenerateFromLot.get_calculator_from_order(order)
